@@ -1,9 +1,9 @@
-package scheduler
+package main
 
 import (
 	"context"
 	"fmt"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -16,7 +16,7 @@ const schedulerName = "random-scheduler"
 func emitEvent(clientset *kubernetes.Clientset, pod *v1.Pod, node *v1.Node, err error) {
 	reason, message, eventType := "", "", ""
 
-	if err != nil {
+	if err == nil {
 		eventType = "Normal"
 		reason = "Scheduled"
 		message = fmt.Sprintf("Pod %s scheduled in node %s", pod.Name, node.Name)
@@ -59,7 +59,8 @@ func randomNode(clientset *kubernetes.Clientset) *v1.Node {
 }
 
 func bind(clientset *kubernetes.Clientset, pod *v1.Pod) {
-	node :=randomNode(clientset)
+	node := randomNode(clientset)
+	fmt.Printf("Assigned pod %s/%s to node %s\n", pod.Namespace, pod.Name, node.Name)
 
 	err := clientset.CoreV1().Pods(pod.Namespace).Bind(
 		context.TODO(),
@@ -92,21 +93,27 @@ func watch(clientset *kubernetes.Clientset) {
 		panic(err.Error())
 	}
 
+	fmt.Printf("Watching for new pods to schedule...\n")
+
 	for event := range watch.ResultChan() {
 		if event.Type != "ADDED" {
 			continue
 		}
 		pod := event.Object.(*v1.Pod)
-		fmt.Println("found a pod to schedule:", pod.Namespace, "/", pod.Name)
+		fmt.Printf("Found a pod to schedule: %s/%s\n", pod.Namespace, pod.Name)
 		bind(clientset, pod)
 	}
 }
 
 func main() {
+	fmt.Printf("Starting %s...\n", schedulerName)
+
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		panic(err.Error())
 	}
+
+	fmt.Printf("Creating clientset...\n")
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
