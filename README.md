@@ -1,5 +1,14 @@
 # scheduler
 
+### What's next
+
+Using only informers for caching is still not enough for a production grade scheduler,
+as it needs to track the current resource requests on nodes, pods running on each of the nodes,
+along a few other things. The default scheduler contains a custom cache implementation on top of
+the informers to achieve this. And there are also other things like handling errors during scheduling,
+using a proper queue implementation, achieving high availability, and of course writing some meaningful
+business logic to find a proper node just to name a few.
+
 ### Kubernetes Pod Lifecycle
 
 1. A pod is created and its desired state is saved to `etcd` with the node name unfilled
@@ -17,6 +26,12 @@
 ## Development
 
 ```
-ksync watch &
+ksync watch
+
+# If config not created:
 ksync create --selector=component=aida-scheduler --reload=false --local-read-only=true $(pwd) /code
+
+keti aida-scheduler-55dd5b4747-l6l6z -- sh
+  cd /code
+  go run main.go
 ```
