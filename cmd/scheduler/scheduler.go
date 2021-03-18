@@ -1,8 +1,8 @@
 package main
 
 import (
-	"aida-dos-scheduler/algorithms/location_sorted"
-	"aida-dos-scheduler/utils"
+	"aida-scheduler/algorithms/location_sorted"
+	"aida-scheduler/utils"
 	"context"
 	"fmt"
 	v1 "k8s.io/api/core/v1"
@@ -53,7 +53,7 @@ func watch(clientset *kubernetes.Clientset, nodeLister informersv1.NodeLister) {
 	watch, err := clientset.CoreV1().Pods("").Watch(
 		context.TODO(),
 		metav1.ListOptions {
-			FieldSelector: fmt.Sprintf("spec.schedulerName=aida-dos-scheduler,spec.nodeName="),
+			FieldSelector: fmt.Sprintf("spec.schedulerName=aida-scheduler,spec.nodeName="),
 		},
 	)
 
@@ -97,7 +97,7 @@ func getNodeLister(clientset *kubernetes.Clientset) informersv1.NodeLister {
 }
 
 func main() {
-	klog.Infof("starting %s aida-dos-scheduler...\n", algorithmName)
+	klog.Infof("starting %s aida-scheduler...\n", algorithmName)
 
 	config, err := rest.InClusterConfig()
 	if err != nil {

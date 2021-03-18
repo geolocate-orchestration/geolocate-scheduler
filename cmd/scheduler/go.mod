@@ -1,4 +1,4 @@
-module aida-dos-scheduler
+module aida-scheduler
 
 go 1.16
 
