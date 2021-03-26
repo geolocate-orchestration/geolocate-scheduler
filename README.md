@@ -1,4 +1,4 @@
-# scheduler
+# aida-scheduler
 
 ### What's next
 

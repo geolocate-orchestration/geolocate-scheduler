@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func EmitEvent(algorithmName string, clientset *kubernetes.Clientset, pod *v1.Pod, node *v1.Node, err error) {
+func EmitEvent(algorithmName string, clientset *kubernetes.Clientset, pod *v1.Pod, node *Node, err error) {
 	reason, message, eventType := getMessage(pod, node, err)
 	timestamp := time.Now().UTC()
 
@@ -51,7 +51,7 @@ func objectMeta(pod *v1.Pod) metav1.ObjectMeta {
 	}
 }
 
-func getMessage(pod *v1.Pod, node *v1.Node, err error) (string, string, string) {
+func getMessage(pod *v1.Pod, node *Node, err error) (string, string, string) {
 	reason, message, eventType := "", "", ""
 
 	if err == nil {

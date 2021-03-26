@@ -1,26 +1,23 @@
-package main
+package scheduler
 
 import (
-	"aida-scheduler/algorithms/location_sorted"
-	"aida-scheduler/utils"
+	"aida-scheduler/scheduler/algorithms/geographicLocation"
+	"aida-scheduler/scheduler/utils"
 	"context"
 	"fmt"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	informersv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	"os"
 )
 
-const algorithmName = "location_sorted"
-var GetNode = location_sorted.GetNode
+const algorithmName = "geographic_location"
+var GetNode = geographicLocation.GetNode
 
-func bind(clientset *kubernetes.Clientset, nodeLister informersv1.NodeLister, pod *v1.Pod) {
-	node, err := GetNode(nodeLister, pod)
+func bind(clientset *kubernetes.Clientset, nodes *utils.Nodes, pod *v1.Pod) {
+	node, err := GetNode(nodes, pod)
 
 	if err != nil {
 		klog.Errorln(err)
@@ -49,7 +46,7 @@ func bind(clientset *kubernetes.Clientset, nodeLister informersv1.NodeLister, po
 	utils.EmitEvent(algorithmName, clientset, pod, node, err)
 }
 
-func watch(clientset *kubernetes.Clientset, nodeLister informersv1.NodeLister) {
+func watch(clientset *kubernetes.Clientset, nodes *utils.Nodes) {
 	watch, err := clientset.CoreV1().Pods("").Watch(
 		context.TODO(),
 		metav1.ListOptions {
@@ -70,33 +67,11 @@ func watch(clientset *kubernetes.Clientset, nodeLister informersv1.NodeLister) {
 		}
 		pod := event.Object.(*v1.Pod)
 		klog.Infof("found a pod to schedule: %s/%s\n", pod.Namespace, pod.Name)
-		bind(clientset, nodeLister, pod)
+		bind(clientset, nodes, pod)
 	}
 }
 
-func getNodeLister(clientset *kubernetes.Clientset) informersv1.NodeLister {
-	factory := informers.NewSharedInformerFactory(clientset, 0)
-	nodeInformer := factory.Core().V1().Nodes()
-
-	stopper := make(chan struct{})
-
-	nodeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			node := obj.(*v1.Node)
-			klog.Infof("new node added to cache: %s\n", node.Name)
-		},
-		DeleteFunc: func(obj interface{}) {
-			node := obj.(*v1.Node)
-			klog.Infof("node deleted from cache: %s\n", node.Name)
-		},
-	})
-
-	factory.Start(stopper)
-
-	return nodeInformer.Lister()
-}
-
-func main() {
+func Run() {
 	klog.Infof("starting %s aida-scheduler...\n", algorithmName)
 
 	config, err := rest.InClusterConfig()
@@ -113,6 +88,8 @@ func main() {
 		os.Exit(2)
 	}
 
-	nodeLister := getNodeLister(clientset)
-	watch(clientset, nodeLister)
+	nodes := &utils.Nodes{ ClientSet: clientset }
+	nodes.StartNodeInformerHandler()
+
+	watch(clientset, nodes)
 }
