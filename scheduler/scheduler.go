@@ -14,10 +14,9 @@ import (
 )
 
 const algorithmName = "geographic_location"
-var GetNode = geographicLocation.GetNode
 
-func bind(clientset *kubernetes.Clientset, nodes *utils.Nodes, pod *v1.Pod) {
-	node, err := GetNode(nodes, pod)
+func bind(clientset *kubernetes.Clientset, geo geographicLocation.GeographicLocation, pod *v1.Pod) {
+	node, err := geo.GetNode(pod)
 
 	if err != nil {
 		klog.Errorln(err)
@@ -46,7 +45,7 @@ func bind(clientset *kubernetes.Clientset, nodes *utils.Nodes, pod *v1.Pod) {
 	utils.EmitEvent(algorithmName, clientset, pod, node, err)
 }
 
-func watch(clientset *kubernetes.Clientset, nodes *utils.Nodes) {
+func watch(clientset *kubernetes.Clientset, geo geographicLocation.GeographicLocation) {
 	watch, err := clientset.CoreV1().Pods("").Watch(
 		context.TODO(),
 		metav1.ListOptions {
@@ -67,7 +66,7 @@ func watch(clientset *kubernetes.Clientset, nodes *utils.Nodes) {
 		}
 		pod := event.Object.(*v1.Pod)
 		klog.Infof("found a pod to schedule: %s/%s\n", pod.Namespace, pod.Name)
-		bind(clientset, nodes, pod)
+		bind(clientset, geo, pod)
 	}
 }
 
@@ -88,8 +87,8 @@ func Run() {
 		os.Exit(2)
 	}
 
-	nodes := &utils.Nodes{ ClientSet: clientset }
-	nodes.StartNodeInformerHandler()
+	nodes := utils.New(clientset)
+	geo := geographicLocation.New(nodes)
 
-	watch(clientset, nodes)
+	watch(clientset, geo)
 }
