@@ -48,7 +48,7 @@ func bind(clientset *kubernetes.Clientset, geo geographicLocation.GeographicLoca
 func watch(clientset *kubernetes.Clientset, geo geographicLocation.GeographicLocation) {
 	watch, err := clientset.CoreV1().Pods("").Watch(
 		context.TODO(),
-		metav1.ListOptions {
+		metav1.ListOptions{
 			FieldSelector: fmt.Sprintf("spec.schedulerName=aida-scheduler,spec.nodeName="),
 		},
 	)

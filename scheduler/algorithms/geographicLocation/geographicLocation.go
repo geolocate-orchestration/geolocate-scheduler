@@ -14,11 +14,11 @@ type GeographicLocation interface {
 }
 
 type geographicLocation struct {
-	nodes utils.Nodes
-	pod *v1.Pod
-	queryType string // required or preferred
-	cities []string
-	countries []string
+	nodes      utils.Nodes
+	pod        *v1.Pod
+	queryType  string // required or preferred
+	cities     []string
+	countries  []string
 	continents []string
 }
 
@@ -56,12 +56,10 @@ func (geo *geographicLocation) GetNode(pod *v1.Pod) (*utils.Node, error) {
 	return node, err
 }
 
-
 // Locations
 
-
 func (geo *geographicLocation) getNodeByLocation() (*utils.Node, error) {
-	locations := geo.pod.Labels["deployment.edge.aida.io/" + geo.queryType + "Location"]
+	locations := geo.pod.Labels["deployment.edge.aida.io/"+geo.queryType+"Location"]
 	klog.Infoln(geo.queryType, "location:", locations)
 
 	// fill location info from labels in the geo struct
@@ -88,9 +86,7 @@ func (geo *geographicLocation) getNodeByLocation() (*utils.Node, error) {
 	return getRandomNode(geo.nodes)
 }
 
-
 // GetBy
-
 
 func (geo *geographicLocation) getByCity() (*utils.Node, error) {
 	if node, err := geo.nodes.FindAnyNodeByCity(geo.cities); err == nil {
@@ -136,7 +132,6 @@ func (geo *geographicLocation) getByContinent() (*utils.Node, error) {
 
 	return nil, errors.New("no nodes matched selected continents")
 }
-
 
 // Helpers
 
