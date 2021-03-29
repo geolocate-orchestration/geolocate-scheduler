@@ -97,12 +97,12 @@ func (geo *geographicLocation) getByCity() (*utils.Node, error) {
 	}
 
 	// because location is "preferred" will search nodes in the selected cities countries
-	if node, err := geo.nodes.FindAnyNodeCityCountry(geo.cities); err == nil {
+	if node, err := geo.nodes.FindAnyNodeByCityCountry(geo.cities); err == nil {
 		return node, nil
 	}
 
 	// because location is "preferred" will search nodes in the selected cities continents
-	if node, err := geo.nodes.FindAnyNodeCityContinent(geo.cities); err == nil {
+	if node, err := geo.nodes.FindAnyNodeByCityContinent(geo.cities); err == nil {
 		return node, nil
 	}
 

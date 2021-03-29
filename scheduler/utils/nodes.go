@@ -16,8 +16,8 @@ type Nodes interface {
 	GetAllNodes() []*Node
 	CountNodes() int
 	FindAnyNodeByCity(cities []string) (*Node, error)
-	FindAnyNodeCityCountry(cities []string) (*Node, error)
-	FindAnyNodeCityContinent(cities []string) (*Node, error)
+	FindAnyNodeByCityCountry(cities []string) (*Node, error)
+	FindAnyNodeByCityContinent(cities []string) (*Node, error)
 	FindAnyNodeByCountry(countries []string) (*Node, error)
 	FindAnyNodeByCountryContinent(countries []string) (*Node, error)
 	FindAnyNodeByContinent(continents []string) (*Node, error)
@@ -39,6 +39,12 @@ type Node struct {
 	Name string
 }
 
+const (
+	cityLabel      = "node.edge.aida.io/city"
+	countryLabel   = "node.edge.aida.io/country"
+	continentLabel = "node.edge.aida.io/continent"
+)
+
 func New(clientSet *kubernetes.Clientset) Nodes {
 	nodes := nodes{
 		clientSet: clientSet,
@@ -55,12 +61,6 @@ func New(clientSet *kubernetes.Clientset) Nodes {
 	return &nodes
 }
 
-const (
-	cityLabel      = "node.edge.aida.io/city"
-	countryLabel   = "node.edge.aida.io/country"
-	continentLabel = "node.edge.aida.io/continent"
-)
-
 func (nodes *nodes) GetAllNodes() []*Node {
 	return nodes.nodes
 }
@@ -71,7 +71,7 @@ func (nodes *nodes) CountNodes() int {
 
 func (nodes *nodes) FindAnyNodeByCity(cities []string) (*Node, error) {
 	for _, city := range cities {
-		if node, err := nodes.getNodeByCity(city); err != nil {
+		if node, err := nodes.getNodeByCity(city); err == nil {
 			return node, nil
 		}
 	}
@@ -79,7 +79,7 @@ func (nodes *nodes) FindAnyNodeByCity(cities []string) (*Node, error) {
 	return nil, errors.New("no nodes match given cities")
 }
 
-func (nodes *nodes) FindAnyNodeCityCountry(cities []string) (*Node, error) {
+func (nodes *nodes) FindAnyNodeByCityCountry(cities []string) (*Node, error) {
 	for _, city := range cities {
 		if countryResult, err := nodes.query.FindSubdivisionCountryByName(city); err != nil {
 			// If subdivision name does not exists return error
@@ -95,7 +95,7 @@ func (nodes *nodes) FindAnyNodeCityCountry(cities []string) (*Node, error) {
 	return nil, errors.New("no nodes match given cities countries nor continents")
 }
 
-func (nodes *nodes) FindAnyNodeCityContinent(cities []string) (*Node, error) {
+func (nodes *nodes) FindAnyNodeByCityContinent(cities []string) (*Node, error) {
 	for _, city := range cities {
 		if countryResult, err := nodes.query.FindSubdivisionCountryByName(city); err != nil {
 			// If subdivision name does not exists return error
@@ -116,7 +116,7 @@ func (nodes *nodes) FindAnyNodeByCountry(countries []string) (*Node, error) {
 		if country, err := nodes.findCountry(countryId); err != nil {
 			// If country identifier string does not match any country return error
 			return nil, err
-		} else if node, err := nodes.getNodeByCountry(country.Alpha2); err != nil {
+		} else if node, err := nodes.getNodeByCountry(country.Alpha2); err == nil {
 			// If any node exists in the given country return it
 			return node, nil
 		}
@@ -130,7 +130,7 @@ func (nodes *nodes) FindAnyNodeByCountryContinent(countries []string) (*Node, er
 		if country, err := nodes.findCountry(countryId); err != nil {
 			// If country identifier string does not match any country return error
 			return nil, err
-		} else if node, err := nodes.getNodeByContinent(country.Continent); err != nil {
+		} else if node, err := nodes.getNodeByContinent(country.Continent); err == nil {
 			// If any node exists in the given continent return it
 			return node, nil
 		}
@@ -141,7 +141,7 @@ func (nodes *nodes) FindAnyNodeByCountryContinent(countries []string) (*Node, er
 
 func (nodes *nodes) FindAnyNodeByContinent(continents []string) (*Node, error) {
 	for _, continentsId := range continents {
-		if node, err := nodes.getNodeByContinent(continentsId); err != nil {
+		if node, err := nodes.getNodeByContinent(continentsId); err == nil {
 			// If any node exists in the given continent return it
 			return node, nil
 		}
@@ -153,42 +153,52 @@ func (nodes *nodes) FindAnyNodeByContinent(continents []string) (*Node, error) {
 // Private
 
 func (nodes *nodes) startNodeInformerHandler() {
+	if nodes.clientSet == nil {
+		return
+	}
+
 	factory := informers.NewSharedInformerFactory(nodes.clientSet, 0)
 	nodeInformer := factory.Core().V1().Nodes()
 
 	stopper := make(chan struct{})
 
 	nodeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			nodes.newNode(obj.(*v1.Node))
-		},
-		UpdateFunc: func(oldObj interface{}, newObj interface{}) {
-			oldNode := oldObj.(*v1.Node)
-			newNode := newObj.(*v1.Node)
-
-			_, oldHasEdgeLabel := oldNode.Labels["node-role.kubernetes.io/edge"]
-			_, newHasEdgeLabel := newNode.Labels["node-role.kubernetes.io/edge"]
-
-			if !oldHasEdgeLabel && newHasEdgeLabel {
-				// If node wasn't an edge node but now it is, create it in cache
-				nodes.newNode(newNode)
-			} else if oldHasEdgeLabel && newHasEdgeLabel && nodeHasSignificantChanges(oldNode, newNode) {
-				// If the node is an edge node and has significant update it in cache
-				nodes.updateNode(oldNode, newNode)
-			} else if oldHasEdgeLabel && !newHasEdgeLabel {
-				// If node was an edge node but now it isn't, remove it from cache
-				nodes.deleteNode(oldNode)
-			}
-		},
-		DeleteFunc: func(obj interface{}) {
-			nodes.deleteNode(obj.(*v1.Node))
-		},
+		AddFunc:    nodes.addHandler,
+		UpdateFunc: nodes.updateHandler,
+		DeleteFunc: nodes.deleteHandler,
 	})
 
 	factory.Start(stopper)
 }
 
-func (nodes *nodes) newNode(objNode *v1.Node) {
+func (nodes *nodes) addHandler(obj interface{}) {
+	nodes.addNode(obj.(*v1.Node))
+}
+
+func (nodes *nodes) updateHandler(oldObj interface{}, newObj interface{}) {
+	oldNode := oldObj.(*v1.Node)
+	newNode := newObj.(*v1.Node)
+
+	_, oldHasEdgeLabel := oldNode.Labels["node-role.kubernetes.io/edge"]
+	_, newHasEdgeLabel := newNode.Labels["node-role.kubernetes.io/edge"]
+
+	if !oldHasEdgeLabel && newHasEdgeLabel {
+		// If node wasn't an edge node but now it is, create it in cache
+		nodes.addNode(newNode)
+	} else if oldHasEdgeLabel && newHasEdgeLabel && nodeHasSignificantChanges(oldNode, newNode) {
+		// If the node is an edge node and has significant update it in cache
+		nodes.updateNode(oldNode, newNode)
+	} else if oldHasEdgeLabel && !newHasEdgeLabel {
+		// If node was an edge node but now it isn't, remove it from cache
+		nodes.deleteNode(oldNode)
+	}
+}
+
+func (nodes *nodes) deleteHandler(obj interface{}) {
+	nodes.deleteNode(obj.(*v1.Node))
+}
+
+func (nodes *nodes) addNode(objNode *v1.Node) {
 	if _, ok := objNode.Labels["node-role.kubernetes.io/edge"]; !ok {
 		// Don't add new node if it doesn't have the edge role
 		return
@@ -233,7 +243,7 @@ func (nodes *nodes) updateNode(oldNode *v1.Node, newNode *v1.Node) {
 	klog.Infof("node will be updated in cache: %s\n", oldNode.Name)
 	// TODO: I know it could be more efficient
 	nodes.deleteNode(oldNode)
-	nodes.newNode(newNode)
+	nodes.addNode(newNode)
 }
 
 func (nodes *nodes) deleteNode(objNode *v1.Node) {
@@ -311,10 +321,11 @@ func (nodes *nodes) removeNodeFromContinents(objNode *v1.Node) {
 func (nodes *nodes) getNodeByCity(cityName string) (*Node, error) {
 	city, err := nodes.query.FindSubdivisionByName(cityName)
 	if err != nil {
-		return nil, errors.New("no node matches city")
+		return nil, errors.New(err.Error())
 	}
 
-	if options, ok := nodes.cities[city.Code]; ok {
+	cityCode := fmt.Sprintf("%s-%s", city.CountryAlpha2, city.Code)
+	if options, ok := nodes.cities[cityCode]; ok {
 		return getRandom(options), nil
 	}
 
@@ -330,7 +341,13 @@ func (nodes *nodes) getNodeByCountry(countryCode string) (*Node, error) {
 }
 
 func (nodes *nodes) getNodeByContinent(continentName string) (*Node, error) {
-	if options, ok := nodes.continents[continentName]; ok {
+	continent, err := nodes.continentsList.FindContinent(continentName)
+
+	if err != nil {
+		klog.Errorln(err)
+	}
+
+	if options, ok := nodes.continents[continent.Code]; ok {
 		return getRandom(options), nil
 	}
 
