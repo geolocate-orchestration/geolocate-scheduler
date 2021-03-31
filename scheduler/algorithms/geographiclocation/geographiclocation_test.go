@@ -1,4 +1,4 @@
-package geographicLocation
+package geographiclocation
 
 import (
 	"aida-scheduler/scheduler/nodes"
@@ -9,12 +9,12 @@ import (
 	"testing"
 )
 
-func newTestGeo(nodes *nodes.Nodes, pod *v1.Pod) *geographicLocation {
+func newTestGeo(nodes *nodes.Nodes, pod *v1.Pod) *geographiclocation {
 	if nodes == nil {
 		nodes = newTestNodes(nil, nil, nil, nil)
 	}
 
-	return &geographicLocation{
+	return &geographiclocation{
 		nodes:      nodes,
 		pod:        pod,
 		queryType:  "",

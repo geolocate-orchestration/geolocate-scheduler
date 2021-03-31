@@ -9,8 +9,9 @@ import (
 	"time"
 )
 
-func EmitEvent(algorithmName string, clientset *kubernetes.Clientset, pod *v1.Pod, nodeId string, err error) {
-	reason, message, eventType := getMessage(pod, nodeId, err)
+// EmitEvent logs the binding of a pod to a node to kubernetes cluster
+func EmitEvent(algorithmName string, clientset *kubernetes.Clientset, pod *v1.Pod, nodeID string, err error) {
+	reason, message, eventType := getMessage(pod, nodeID, err)
 	timestamp := time.Now().UTC()
 
 	_, _ = clientset.CoreV1().Events(pod.Namespace).Create(
@@ -51,21 +52,21 @@ func objectMeta(pod *v1.Pod) metav1.ObjectMeta {
 	}
 }
 
-func getMessage(pod *v1.Pod, nodeId string, err error) (string, string, string) {
+func getMessage(pod *v1.Pod, nodeID string, err error) (string, string, string) {
 	reason, message, eventType := "", "", ""
 
 	if err == nil {
 		eventType = "Normal"
 		reason = "Scheduled"
-		message = fmt.Sprintf("Pod %s scheduled in node %s", pod.Name, nodeId)
-	} else if nodeId == "" {
+		message = fmt.Sprintf("Pod %s scheduled in node %s", pod.Name, nodeID)
+	} else if nodeID == "" {
 		eventType = "Warning"
 		reason = "ScheduleNodeError"
 		message = fmt.Sprintf("Failed to get Node information to schedule Pod %s", pod.Name)
 	} else {
 		eventType = "Warning"
 		reason = "ScheduleError"
-		message = fmt.Sprintf("Failed to schedule Pod %s in node %s", pod.Name, nodeId)
+		message = fmt.Sprintf("Failed to schedule Pod %s in node %s", pod.Name, nodeID)
 	}
 
 	return reason, message, eventType

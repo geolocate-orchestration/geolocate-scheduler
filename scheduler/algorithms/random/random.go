@@ -13,6 +13,7 @@ type random struct {
 	nodes nodes.INodes
 }
 
+// New creates new random struct
 func New(nodes nodes.INodes) algorithms.Algorithm {
 	return &random{
 		nodes: nodes,

@@ -6,6 +6,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+// StartNodeInformerHandler begins listening for cluster nodes changes
 func StartNodeInformerHandler(
 	clientSet *kubernetes.Clientset, addHandler func(obj interface{}),
 	updateHandler func(oldObj interface{}, newObj interface{}), deleteHandler func(obj interface{}),

@@ -11,6 +11,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// INodes exports all node controller public methods
 type INodes interface {
 	GetAllNodes() []*Node
 	CountNodes() int
@@ -22,6 +23,7 @@ type INodes interface {
 	FindAnyNodeByContinent(continents []string) (*Node, error)
 }
 
+// Nodes controls in-cache nodes
 type Nodes struct {
 	ClientSet *kubernetes.Clientset
 
@@ -34,6 +36,7 @@ type Nodes struct {
 	Continents map[string][]*Node
 }
 
+// Node represents a cluster Node
 type Node struct {
 	Name string
 }
@@ -44,6 +47,7 @@ const (
 	continentLabel = "node.edge.aida.io/continent"
 )
 
+// New create a new Nodes struct
 func New(clientSet *kubernetes.Clientset) INodes {
 	nodes := Nodes{
 		ClientSet: clientSet,
@@ -60,14 +64,17 @@ func New(clientSet *kubernetes.Clientset) INodes {
 	return &nodes
 }
 
+// GetAllNodes list all cluster edge nodes
 func (nodes *Nodes) GetAllNodes() []*Node {
 	return nodes.Nodes
 }
 
+// CountNodes returns the number of cluster edge nodes
 func (nodes *Nodes) CountNodes() int {
 	return len(nodes.Nodes)
 }
 
+// FindAnyNodeByCity returns one node in given city if exists
 func (nodes *Nodes) FindAnyNodeByCity(cities []string) (*Node, error) {
 	for _, city := range cities {
 		if node, err := nodes.getNodeByCity(city); err == nil {
@@ -78,41 +85,44 @@ func (nodes *Nodes) FindAnyNodeByCity(cities []string) (*Node, error) {
 	return nil, errors.New("no nodes match given cities")
 }
 
+// FindAnyNodeByCityCountry returns one node in given city country if exists
 func (nodes *Nodes) FindAnyNodeByCityCountry(cities []string) (*Node, error) {
 	for _, city := range cities {
-		if countryResult, err := nodes.Query.FindSubdivisionCountryByName(city); err != nil {
+		countryResult, err := nodes.Query.FindSubdivisionCountryByName(city)
+		if err != nil {
 			// If subdivision name does not exists return error
 			return nil, err
-		} else {
-			// If any node exists in the given city country return it
-			if node, err := nodes.getNodeByCountry(countryResult.Alpha2); err == nil {
-				return node, nil
-			}
+		}
+		// If any node exists in the given city country return it
+		if node, err := nodes.getNodeByCountry(countryResult.Alpha2); err == nil {
+			return node, nil
 		}
 	}
 
 	return nil, errors.New("no nodes match given cities countries nor continents")
 }
 
+// FindAnyNodeByCityContinent returns one node in given city continent if exists
 func (nodes *Nodes) FindAnyNodeByCityContinent(cities []string) (*Node, error) {
 	for _, city := range cities {
-		if countryResult, err := nodes.Query.FindSubdivisionCountryByName(city); err != nil {
+		countryResult, err := nodes.Query.FindSubdivisionCountryByName(city)
+		if err != nil {
 			// If subdivision name does not exists return error
 			return nil, err
-		} else {
-			// If any node exists in the given city continent return it
-			if node, err := nodes.getNodeByContinent(countryResult.Continent); err == nil {
-				return node, nil
-			}
+		}
+		// If any node exists in the given city continent return it
+		if node, err := nodes.getNodeByContinent(countryResult.Continent); err == nil {
+			return node, nil
 		}
 	}
 
 	return nil, errors.New("no nodes match given cities countries nor continents")
 }
 
+// FindAnyNodeByCountry returns one node in given country if exists
 func (nodes *Nodes) FindAnyNodeByCountry(countries []string) (*Node, error) {
-	for _, countryId := range countries {
-		if country, err := nodes.findCountry(countryId); err != nil {
+	for _, countryID := range countries {
+		if country, err := nodes.findCountry(countryID); err != nil {
 			// If country identifier string does not match any country return error
 			return nil, err
 		} else if node, err := nodes.getNodeByCountry(country.Alpha2); err == nil {
@@ -124,9 +134,10 @@ func (nodes *Nodes) FindAnyNodeByCountry(countries []string) (*Node, error) {
 	return nil, errors.New("no nodes match given countries")
 }
 
+// FindAnyNodeByCountryContinent returns one node in given country continent if exists
 func (nodes *Nodes) FindAnyNodeByCountryContinent(countries []string) (*Node, error) {
-	for _, countryId := range countries {
-		if country, err := nodes.findCountry(countryId); err != nil {
+	for _, countryID := range countries {
+		if country, err := nodes.findCountry(countryID); err != nil {
 			// If country identifier string does not match any country return error
 			return nil, err
 		} else if node, err := nodes.getNodeByContinent(country.Continent); err == nil {
@@ -138,9 +149,10 @@ func (nodes *Nodes) FindAnyNodeByCountryContinent(countries []string) (*Node, er
 	return nil, errors.New("no nodes match given countries continents")
 }
 
+// FindAnyNodeByContinent returns one node in given continent if exists
 func (nodes *Nodes) FindAnyNodeByContinent(continents []string) (*Node, error) {
-	for _, continentsId := range continents {
-		if node, err := nodes.getNodeByContinent(continentsId); err == nil {
+	for _, continentsID := range continents {
+		if node, err := nodes.getNodeByContinent(continentsID); err == nil {
 			// If any node exists in the given continent return it
 			return node, nil
 		}
@@ -338,12 +350,12 @@ func getRandom(options []*Node) *Node {
 	return options[rand.Intn(len(options))]
 }
 
-func (nodes *Nodes) findCountry(countryId string) (gountries.Country, error) {
-	if country, err := nodes.Query.FindCountryByName(countryId); err == nil {
+func (nodes *Nodes) findCountry(countryID string) (gountries.Country, error) {
+	if country, err := nodes.Query.FindCountryByName(countryID); err == nil {
 		return country, nil
 	}
 
-	if country, err := nodes.Query.FindCountryByAlpha(countryId); err == nil {
+	if country, err := nodes.Query.FindCountryByAlpha(countryID); err == nil {
 		return country, nil
 	}
 

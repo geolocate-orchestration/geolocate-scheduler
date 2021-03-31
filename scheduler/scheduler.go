@@ -2,12 +2,11 @@ package scheduler
 
 import (
 	"aida-scheduler/scheduler/algorithms"
-	"aida-scheduler/scheduler/algorithms/geographicLocation"
+	"aida-scheduler/scheduler/algorithms/geographiclocation"
 	"aida-scheduler/scheduler/algorithms/random"
 	"aida-scheduler/scheduler/nodes"
 	"aida-scheduler/utils"
 	"context"
-	"fmt"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -16,7 +15,7 @@ import (
 	"os"
 )
 
-const algorithmName = "geographic_location"
+const algorithmName = "geographiclocation"
 
 // const algorithmName = "random"
 
@@ -54,7 +53,7 @@ func watch(clientset *kubernetes.Clientset, algorithm algorithms.Algorithm) {
 	watch, err := clientset.CoreV1().Pods("").Watch(
 		context.TODO(),
 		metaV1.ListOptions{
-			FieldSelector: fmt.Sprintf("spec.schedulerName=aida-scheduler,spec.nodeName="),
+			FieldSelector:"spec.schedulerName=aida-scheduler,spec.nodeName=",
 		},
 	)
 
@@ -75,6 +74,7 @@ func watch(clientset *kubernetes.Clientset, algorithm algorithms.Algorithm) {
 	}
 }
 
+// Run init the scheduler service
 func Run() {
 	klog.Infof("starting %s aida-scheduler...\n", algorithmName)
 
@@ -98,8 +98,8 @@ func Run() {
 	switch algorithmName {
 	case "random":
 		algorithm = random.New(nodesStruct)
-	case "geographic_location":
-		algorithm = geographicLocation.New(nodesStruct)
+	case "geographiclocation":
+		algorithm = geographiclocation.New(nodesStruct)
 	default:
 		algorithm = random.New(nodesStruct)
 	}
