@@ -1,0 +1,17 @@
+apiVersion: edge.aida.io/v1
+kind: Deployment
+metadata:
+  name: required-location
+spec:
+  replicas: 1
+  requiredLocation:
+    cities:
+      - Braga
+      - New York
+    continents:
+      - Europe
+  template:
+    spec:
+      containers:
+        - name: test-app
+          image: nginx:latest
