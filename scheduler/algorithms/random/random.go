@@ -1,17 +1,31 @@
 package random
 
 import (
-	"aida-scheduler/scheduler/utils"
+	"aida-scheduler/scheduler/algorithms"
+	"aida-scheduler/scheduler/nodes"
 	"errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	"math/rand"
 )
 
-func GetNode(nodes *utils.Nodes, pod *v1.Pod) (*utils.Node, error) {
-	klog.Infoln("getting cached nodes")
-	allNodes := nodes.GetAllNodes()
+type random struct {
+	nodes nodes.INodes
+}
 
+func New(nodes nodes.INodes) algorithms.Algorithm {
+	return &random{
+		nodes: nodes,
+	}
+}
+
+func (r random) GetNode(*v1.Pod) (*nodes.Node, error) {
+	klog.Infoln("getting cached nodes")
+	allNodes := r.nodes.GetAllNodes()
+	return getRandomNode(allNodes)
+}
+
+func getRandomNode(allNodes []*nodes.Node) (*nodes.Node, error) {
 	if len(allNodes) == 0 {
 		errMessage := "no nodes are available"
 		return nil, errors.New(errMessage)

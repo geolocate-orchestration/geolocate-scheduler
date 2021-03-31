@@ -1,10 +1,11 @@
-package utils
+package nodes
 
 import (
 	"github.com/aida-dos/gountries"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	"testing"
 )
 
@@ -27,17 +28,17 @@ func newTestNode(name string, edge bool, city string, country string, continent 
 	}
 }
 
-func newTestNodes() *nodes {
-	return &nodes{
-		clientSet: nil,
+func newTestNodes() *Nodes {
+	return &Nodes{
+		ClientSet: nil,
 
-		query:          gountries.New(),
-		continentsList: gountries.NewContinents(),
+		Query:          gountries.New(),
+		ContinentsList: gountries.NewContinents(),
 
-		nodes:      make([]*Node, 0),
-		cities:     make(map[string][]*Node),
-		countries:  make(map[string][]*Node),
-		continents: make(map[string][]*Node),
+		Nodes:      make([]*Node, 0),
+		Cities:     make(map[string][]*Node),
+		Countries:  make(map[string][]*Node),
+		Continents: make(map[string][]*Node),
 	}
 }
 
@@ -58,6 +59,8 @@ func TestAddEdgeNode(t *testing.T) {
 
 	nodes.addNode(node)
 
+	klog.Errorln(nodes)
+
 	cityNode, _ := nodes.FindAnyNodeByCity([]string{"Braga"})
 	assert.Equal(t, "Node0", cityNode.Name)
 
@@ -74,9 +77,9 @@ func TestAddEdgeNodeError(t *testing.T) {
 
 	nodes.addNode(node)
 	assert.Equal(t, 1, nodes.CountNodes())
-	assert.Equal(t, 0, len(nodes.cities))
-	assert.Equal(t, 0, len(nodes.countries))
-	assert.Equal(t, 0, len(nodes.continents))
+	assert.Equal(t, 0, len(nodes.Cities))
+	assert.Equal(t, 0, len(nodes.Countries))
+	assert.Equal(t, 0, len(nodes.Continents))
 }
 
 func TestAddNormalNode(t *testing.T) {
@@ -93,14 +96,14 @@ func TestUpdateNode(t *testing.T) {
 
 	nodes.addNode(oldNode)
 
-	assert.Equal(t, 1, len(nodes.cities["PT-03"]))
-	assert.Equal(t, 0, len(nodes.cities["PT-13"]))
+	assert.Equal(t, 1, len(nodes.Cities["PT-03"]))
+	assert.Equal(t, 0, len(nodes.Cities["PT-13"]))
 
 	newNode := newTestNode("Node0", true, "Porto", "Portugal", "Europe")
 	nodes.updateNode(oldNode, newNode)
 
-	assert.Equal(t, 0, len(nodes.cities["PT-03"]))
-	assert.Equal(t, 1, len(nodes.cities["PT-13"]))
+	assert.Equal(t, 0, len(nodes.Cities["PT-03"]))
+	assert.Equal(t, 1, len(nodes.Cities["PT-13"]))
 }
 
 func TestDeleteEdgeNode(t *testing.T) {
@@ -247,11 +250,11 @@ func TestEdgeToEdgeUpdateHandler(t *testing.T) {
 	newNode := newTestNode("Node0", true, "Porto", "Portugal", "Europe")
 
 	nodes.addHandler(oldNode)
-	assert.Equal(t, 1, len(nodes.cities["PT-03"]))
-	assert.Equal(t, 0, len(nodes.cities["PT-13"]))
+	assert.Equal(t, 1, len(nodes.Cities["PT-03"]))
+	assert.Equal(t, 0, len(nodes.Cities["PT-13"]))
 	nodes.updateHandler(oldNode, newNode)
-	assert.Equal(t, 0, len(nodes.cities["PT-03"]))
-	assert.Equal(t, 1, len(nodes.cities["PT-13"]))
+	assert.Equal(t, 0, len(nodes.Cities["PT-03"]))
+	assert.Equal(t, 1, len(nodes.Cities["PT-13"]))
 }
 
 func TestNormalToEdgeUpdateHandler(t *testing.T) {

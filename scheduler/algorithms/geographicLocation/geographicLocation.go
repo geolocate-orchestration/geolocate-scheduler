@@ -1,7 +1,8 @@
 package geographicLocation
 
 import (
-	"aida-scheduler/scheduler/utils"
+	"aida-scheduler/scheduler/algorithms"
+	"aida-scheduler/scheduler/nodes"
 	"errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
@@ -9,12 +10,8 @@ import (
 	"strings"
 )
 
-type GeographicLocation interface {
-	GetNode(pod *v1.Pod) (*utils.Node, error)
-}
-
 type geographicLocation struct {
-	nodes      utils.Nodes
+	nodes      nodes.INodes
 	pod        *v1.Pod
 	queryType  string // required or preferred
 	cities     []string
@@ -22,7 +19,7 @@ type geographicLocation struct {
 	continents []string
 }
 
-func New(nodes utils.Nodes) GeographicLocation {
+func New(nodes nodes.INodes) algorithms.Algorithm {
 	return &geographicLocation{
 		nodes:      nodes,
 		pod:        nil,
@@ -35,8 +32,8 @@ func New(nodes utils.Nodes) GeographicLocation {
 
 // GetNode select the best node matching the given constraints labels
 // It returns error if there are no nodes available and if no node matches an existing 'requiredLocation' label
-func (geo *geographicLocation) GetNode(pod *v1.Pod) (*utils.Node, error) {
-	var node *utils.Node
+func (geo *geographicLocation) GetNode(pod *v1.Pod) (*nodes.Node, error) {
+	var node *nodes.Node
 	var err error
 
 	if geo.nodes.CountNodes() == 0 {
@@ -58,22 +55,22 @@ func (geo *geographicLocation) GetNode(pod *v1.Pod) (*utils.Node, error) {
 
 // Locations
 
-func (geo *geographicLocation) getNodeByLocation() (*utils.Node, error) {
+func (geo *geographicLocation) getNodeByLocation() (*nodes.Node, error) {
 	locations := geo.pod.Labels["deployment.edge.aida.io/"+geo.queryType+"Location"]
 	klog.Infoln(geo.queryType, "location:", locations)
 
 	// fill location info from labels in the geo struct
 	geo.parseLocations(locations)
 
-	if node, err := geo.getByCity(); err != nil {
+	if node, err := geo.getByCity(); err == nil {
 		return node, nil
 	}
 
-	if node, err := geo.getByCountry(); err != nil {
+	if node, err := geo.getByCountry(); err == nil {
 		return node, nil
 	}
 
-	if node, err := geo.getByContinent(); err != nil {
+	if node, err := geo.getByContinent(); err == nil {
 		return node, nil
 	}
 
@@ -88,7 +85,7 @@ func (geo *geographicLocation) getNodeByLocation() (*utils.Node, error) {
 
 // GetBy
 
-func (geo *geographicLocation) getByCity() (*utils.Node, error) {
+func (geo *geographicLocation) getByCity() (*nodes.Node, error) {
 	if node, err := geo.nodes.FindAnyNodeByCity(geo.cities); err == nil {
 		return node, nil
 	} else if geo.queryType == "required" {
@@ -109,7 +106,7 @@ func (geo *geographicLocation) getByCity() (*utils.Node, error) {
 	return nil, errors.New("no nodes matched selected cities or their countries/continents")
 }
 
-func (geo *geographicLocation) getByCountry() (*utils.Node, error) {
+func (geo *geographicLocation) getByCountry() (*nodes.Node, error) {
 	if node, err := geo.nodes.FindAnyNodeByCountry(geo.countries); err == nil {
 		return node, nil
 	} else if geo.queryType == "required" {
@@ -125,7 +122,7 @@ func (geo *geographicLocation) getByCountry() (*utils.Node, error) {
 	return nil, errors.New("no nodes matched selected countries or their continents")
 }
 
-func (geo *geographicLocation) getByContinent() (*utils.Node, error) {
+func (geo *geographicLocation) getByContinent() (*nodes.Node, error) {
 	if node, err := geo.nodes.FindAnyNodeByContinent(geo.continents); err == nil {
 		return node, nil
 	}
@@ -147,7 +144,7 @@ func (geo *geographicLocation) getLocationLabelType() string {
 	return ""
 }
 
-func getRandomNode(nodes utils.Nodes) (*utils.Node, error) {
+func getRandomNode(nodes nodes.INodes) (*nodes.Node, error) {
 	allNodes := nodes.GetAllNodes()
 
 	if len(allNodes) == 0 {

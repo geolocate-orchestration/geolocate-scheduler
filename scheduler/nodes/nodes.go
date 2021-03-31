@@ -1,18 +1,17 @@
-package utils
+package nodes
 
 import (
+	"aida-scheduler/utils"
 	"errors"
 	"fmt"
 	"github.com/aida-dos/gountries"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 )
 
-type Nodes interface {
+type INodes interface {
 	GetAllNodes() []*Node
 	CountNodes() int
 	FindAnyNodeByCity(cities []string) (*Node, error)
@@ -23,16 +22,16 @@ type Nodes interface {
 	FindAnyNodeByContinent(continents []string) (*Node, error)
 }
 
-type nodes struct {
-	clientSet *kubernetes.Clientset
+type Nodes struct {
+	ClientSet *kubernetes.Clientset
 
-	query          *gountries.Query
-	continentsList gountries.Continents
+	Query          *gountries.Query
+	ContinentsList gountries.Continents
 
-	nodes      []*Node
-	cities     map[string][]*Node
-	countries  map[string][]*Node
-	continents map[string][]*Node
+	Nodes      []*Node
+	Cities     map[string][]*Node
+	Countries  map[string][]*Node
+	Continents map[string][]*Node
 }
 
 type Node struct {
@@ -45,31 +44,31 @@ const (
 	continentLabel = "node.edge.aida.io/continent"
 )
 
-func New(clientSet *kubernetes.Clientset) Nodes {
-	nodes := nodes{
-		clientSet: clientSet,
+func New(clientSet *kubernetes.Clientset) INodes {
+	nodes := Nodes{
+		ClientSet: clientSet,
 
-		query:          gountries.New(),
-		continentsList: gountries.NewContinents(),
+		Query:          gountries.New(),
+		ContinentsList: gountries.NewContinents(),
 
-		nodes:      make([]*Node, 0),
-		cities:     make(map[string][]*Node),
-		countries:  make(map[string][]*Node),
-		continents: make(map[string][]*Node),
+		Nodes:      make([]*Node, 0),
+		Cities:     make(map[string][]*Node),
+		Countries:  make(map[string][]*Node),
+		Continents: make(map[string][]*Node),
 	}
-	nodes.startNodeInformerHandler()
+	utils.StartNodeInformerHandler(clientSet, nodes.addHandler, nodes.updateHandler, nodes.deleteHandler)
 	return &nodes
 }
 
-func (nodes *nodes) GetAllNodes() []*Node {
-	return nodes.nodes
+func (nodes *Nodes) GetAllNodes() []*Node {
+	return nodes.Nodes
 }
 
-func (nodes *nodes) CountNodes() int {
-	return len(nodes.nodes)
+func (nodes *Nodes) CountNodes() int {
+	return len(nodes.Nodes)
 }
 
-func (nodes *nodes) FindAnyNodeByCity(cities []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByCity(cities []string) (*Node, error) {
 	for _, city := range cities {
 		if node, err := nodes.getNodeByCity(city); err == nil {
 			return node, nil
@@ -79,9 +78,9 @@ func (nodes *nodes) FindAnyNodeByCity(cities []string) (*Node, error) {
 	return nil, errors.New("no nodes match given cities")
 }
 
-func (nodes *nodes) FindAnyNodeByCityCountry(cities []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByCityCountry(cities []string) (*Node, error) {
 	for _, city := range cities {
-		if countryResult, err := nodes.query.FindSubdivisionCountryByName(city); err != nil {
+		if countryResult, err := nodes.Query.FindSubdivisionCountryByName(city); err != nil {
 			// If subdivision name does not exists return error
 			return nil, err
 		} else {
@@ -95,9 +94,9 @@ func (nodes *nodes) FindAnyNodeByCityCountry(cities []string) (*Node, error) {
 	return nil, errors.New("no nodes match given cities countries nor continents")
 }
 
-func (nodes *nodes) FindAnyNodeByCityContinent(cities []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByCityContinent(cities []string) (*Node, error) {
 	for _, city := range cities {
-		if countryResult, err := nodes.query.FindSubdivisionCountryByName(city); err != nil {
+		if countryResult, err := nodes.Query.FindSubdivisionCountryByName(city); err != nil {
 			// If subdivision name does not exists return error
 			return nil, err
 		} else {
@@ -111,7 +110,7 @@ func (nodes *nodes) FindAnyNodeByCityContinent(cities []string) (*Node, error) {
 	return nil, errors.New("no nodes match given cities countries nor continents")
 }
 
-func (nodes *nodes) FindAnyNodeByCountry(countries []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByCountry(countries []string) (*Node, error) {
 	for _, countryId := range countries {
 		if country, err := nodes.findCountry(countryId); err != nil {
 			// If country identifier string does not match any country return error
@@ -125,7 +124,7 @@ func (nodes *nodes) FindAnyNodeByCountry(countries []string) (*Node, error) {
 	return nil, errors.New("no nodes match given countries")
 }
 
-func (nodes *nodes) FindAnyNodeByCountryContinent(countries []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByCountryContinent(countries []string) (*Node, error) {
 	for _, countryId := range countries {
 		if country, err := nodes.findCountry(countryId); err != nil {
 			// If country identifier string does not match any country return error
@@ -139,7 +138,7 @@ func (nodes *nodes) FindAnyNodeByCountryContinent(countries []string) (*Node, er
 	return nil, errors.New("no nodes match given countries continents")
 }
 
-func (nodes *nodes) FindAnyNodeByContinent(continents []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByContinent(continents []string) (*Node, error) {
 	for _, continentsId := range continents {
 		if node, err := nodes.getNodeByContinent(continentsId); err == nil {
 			// If any node exists in the given continent return it
@@ -152,30 +151,11 @@ func (nodes *nodes) FindAnyNodeByContinent(continents []string) (*Node, error) {
 
 // Private
 
-func (nodes *nodes) startNodeInformerHandler() {
-	if nodes.clientSet == nil {
-		return
-	}
-
-	factory := informers.NewSharedInformerFactory(nodes.clientSet, 0)
-	nodeInformer := factory.Core().V1().Nodes()
-
-	stopper := make(chan struct{})
-
-	nodeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    nodes.addHandler,
-		UpdateFunc: nodes.updateHandler,
-		DeleteFunc: nodes.deleteHandler,
-	})
-
-	factory.Start(stopper)
-}
-
-func (nodes *nodes) addHandler(obj interface{}) {
+func (nodes *Nodes) addHandler(obj interface{}) {
 	nodes.addNode(obj.(*v1.Node))
 }
 
-func (nodes *nodes) updateHandler(oldObj interface{}, newObj interface{}) {
+func (nodes *Nodes) updateHandler(oldObj interface{}, newObj interface{}) {
 	oldNode := oldObj.(*v1.Node)
 	newNode := newObj.(*v1.Node)
 
@@ -194,11 +174,11 @@ func (nodes *nodes) updateHandler(oldObj interface{}, newObj interface{}) {
 	}
 }
 
-func (nodes *nodes) deleteHandler(obj interface{}) {
+func (nodes *Nodes) deleteHandler(obj interface{}) {
 	nodes.deleteNode(obj.(*v1.Node))
 }
 
-func (nodes *nodes) addNode(objNode *v1.Node) {
+func (nodes *Nodes) addNode(objNode *v1.Node) {
 	if _, ok := objNode.Labels["node-role.kubernetes.io/edge"]; !ok {
 		// Don't add new node if it doesn't have the edge role
 		return
@@ -209,12 +189,12 @@ func (nodes *nodes) addNode(objNode *v1.Node) {
 	countryValue := objNode.Labels[countryLabel]
 	continentValue := objNode.Labels[continentLabel]
 
-	nodes.nodes = append(nodes.nodes, node)
+	nodes.Nodes = append(nodes.Nodes, node)
 
 	if cityValue != "" {
-		if city, err := nodes.query.FindSubdivisionByName(cityValue); err == nil {
+		if city, err := nodes.Query.FindSubdivisionByName(cityValue); err == nil {
 			cityCode := fmt.Sprintf("%s-%s", city.CountryAlpha2, city.Code)
-			nodes.cities[cityCode] = append(nodes.cities[cityCode], node)
+			nodes.Cities[cityCode] = append(nodes.Cities[cityCode], node)
 		} else {
 			klog.Errorln(err)
 		}
@@ -222,15 +202,15 @@ func (nodes *nodes) addNode(objNode *v1.Node) {
 
 	if countryValue != "" {
 		if country, err := nodes.findCountry(countryValue); err == nil {
-			nodes.countries[country.Alpha2] = append(nodes.countries[country.Alpha2], node)
+			nodes.Countries[country.Alpha2] = append(nodes.Countries[country.Alpha2], node)
 		} else {
 			klog.Errorln(err)
 		}
 	}
 
 	if continentValue != "" {
-		if continent, err := nodes.continentsList.FindContinent(continentValue); err == nil {
-			nodes.continents[continent.Code] = append(nodes.continents[continent.Code], node)
+		if continent, err := nodes.ContinentsList.FindContinent(continentValue); err == nil {
+			nodes.Continents[continent.Code] = append(nodes.Continents[continent.Code], node)
 		} else {
 			klog.Errorln(err)
 		}
@@ -239,14 +219,14 @@ func (nodes *nodes) addNode(objNode *v1.Node) {
 	klog.Infof("new node added to cache: %s\n", node.Name)
 }
 
-func (nodes *nodes) updateNode(oldNode *v1.Node, newNode *v1.Node) {
+func (nodes *Nodes) updateNode(oldNode *v1.Node, newNode *v1.Node) {
 	klog.Infof("node will be updated in cache: %s\n", oldNode.Name)
 	// TODO: I know it could be more efficient
 	nodes.deleteNode(oldNode)
 	nodes.addNode(newNode)
 }
 
-func (nodes *nodes) deleteNode(objNode *v1.Node) {
+func (nodes *Nodes) deleteNode(objNode *v1.Node) {
 	if _, ok := objNode.Labels["node-role.kubernetes.io/edge"]; !ok {
 		// Don't try to remove the node if it doesn't have the edge role
 		return
@@ -260,23 +240,23 @@ func (nodes *nodes) deleteNode(objNode *v1.Node) {
 	klog.Infof("node deleted from cache: %s\n", objNode.Name)
 }
 
-func (nodes *nodes) removeNodeFromNodes(objNode *v1.Node) {
-	for i, v := range nodes.nodes {
+func (nodes *Nodes) removeNodeFromNodes(objNode *v1.Node) {
+	for i, v := range nodes.Nodes {
 		if v.Name == objNode.Name {
-			nodes.nodes = append(nodes.nodes[:i], nodes.nodes[i+1:]...)
+			nodes.Nodes = append(nodes.Nodes[:i], nodes.Nodes[i+1:]...)
 		}
 	}
 }
 
-func (nodes *nodes) removeNodeFromCities(objNode *v1.Node) {
+func (nodes *Nodes) removeNodeFromCities(objNode *v1.Node) {
 	cityValue := objNode.Labels[cityLabel]
 
 	if cityValue != "" {
-		if city, err := nodes.query.FindSubdivisionByName(cityValue); err == nil {
+		if city, err := nodes.Query.FindSubdivisionByName(cityValue); err == nil {
 			cityCode := fmt.Sprintf("%s-%s", city.CountryAlpha2, city.Code)
-			for i, v := range nodes.cities[cityCode] {
+			for i, v := range nodes.Cities[cityCode] {
 				if v.Name == objNode.Name {
-					nodes.cities[cityCode] = append(nodes.cities[cityCode][:i], nodes.cities[cityCode][i+1:]...)
+					nodes.Cities[cityCode] = append(nodes.Cities[cityCode][:i], nodes.Cities[cityCode][i+1:]...)
 				}
 			}
 		} else {
@@ -285,14 +265,14 @@ func (nodes *nodes) removeNodeFromCities(objNode *v1.Node) {
 	}
 }
 
-func (nodes *nodes) removeNodeFromCountries(objNode *v1.Node) {
+func (nodes *Nodes) removeNodeFromCountries(objNode *v1.Node) {
 	countryValue := objNode.Labels[countryLabel]
 	if countryValue != "" {
 		if country, err := nodes.findCountry(countryValue); err == nil {
-			for i, v := range nodes.countries[country.Alpha2] {
+			for i, v := range nodes.Countries[country.Alpha2] {
 				if v.Name == objNode.Name {
-					nodes.countries[country.Alpha2] =
-						append(nodes.countries[country.Alpha2][:i], nodes.countries[country.Alpha2][i+1:]...)
+					nodes.Countries[country.Alpha2] =
+						append(nodes.Countries[country.Alpha2][:i], nodes.Countries[country.Alpha2][i+1:]...)
 				}
 			}
 		} else {
@@ -301,15 +281,15 @@ func (nodes *nodes) removeNodeFromCountries(objNode *v1.Node) {
 	}
 }
 
-func (nodes *nodes) removeNodeFromContinents(objNode *v1.Node) {
+func (nodes *Nodes) removeNodeFromContinents(objNode *v1.Node) {
 	continentValue := objNode.Labels[continentLabel]
 
 	if continentValue != "" {
-		if continent, err := nodes.continentsList.FindContinent(continentValue); err == nil {
-			for i, v := range nodes.continents[continent.Code] {
+		if continent, err := nodes.ContinentsList.FindContinent(continentValue); err == nil {
+			for i, v := range nodes.Continents[continent.Code] {
 				if v.Name == objNode.Name {
-					nodes.continents[continent.Code] =
-						append(nodes.continents[continent.Code][:i], nodes.continents[continent.Code][i+1:]...)
+					nodes.Continents[continent.Code] =
+						append(nodes.Continents[continent.Code][:i], nodes.Continents[continent.Code][i+1:]...)
 				}
 			}
 		} else {
@@ -318,36 +298,36 @@ func (nodes *nodes) removeNodeFromContinents(objNode *v1.Node) {
 	}
 }
 
-func (nodes *nodes) getNodeByCity(cityName string) (*Node, error) {
-	city, err := nodes.query.FindSubdivisionByName(cityName)
+func (nodes *Nodes) getNodeByCity(cityName string) (*Node, error) {
+	city, err := nodes.Query.FindSubdivisionByName(cityName)
 	if err != nil {
 		return nil, errors.New(err.Error())
 	}
 
 	cityCode := fmt.Sprintf("%s-%s", city.CountryAlpha2, city.Code)
-	if options, ok := nodes.cities[cityCode]; ok {
+	if options, ok := nodes.Cities[cityCode]; ok {
 		return getRandom(options), nil
 	}
 
 	return nil, errors.New("no node matches city")
 }
 
-func (nodes *nodes) getNodeByCountry(countryCode string) (*Node, error) {
-	if options, ok := nodes.countries[countryCode]; ok {
+func (nodes *Nodes) getNodeByCountry(countryCode string) (*Node, error) {
+	if options, ok := nodes.Countries[countryCode]; ok {
 		return getRandom(options), nil
 	}
 
 	return nil, errors.New("no nodes match given country")
 }
 
-func (nodes *nodes) getNodeByContinent(continentName string) (*Node, error) {
-	continent, err := nodes.continentsList.FindContinent(continentName)
+func (nodes *Nodes) getNodeByContinent(continentName string) (*Node, error) {
+	continent, err := nodes.ContinentsList.FindContinent(continentName)
 
 	if err != nil {
 		klog.Errorln(err)
 	}
 
-	if options, ok := nodes.continents[continent.Code]; ok {
+	if options, ok := nodes.Continents[continent.Code]; ok {
 		return getRandom(options), nil
 	}
 
@@ -358,12 +338,12 @@ func getRandom(options []*Node) *Node {
 	return options[rand.Intn(len(options))]
 }
 
-func (nodes *nodes) findCountry(countryId string) (gountries.Country, error) {
-	if country, err := nodes.query.FindCountryByName(countryId); err == nil {
+func (nodes *Nodes) findCountry(countryId string) (gountries.Country, error) {
+	if country, err := nodes.Query.FindCountryByName(countryId); err == nil {
 		return country, nil
 	}
 
-	if country, err := nodes.query.FindCountryByAlpha(countryId); err == nil {
+	if country, err := nodes.Query.FindCountryByAlpha(countryId); err == nil {
 		return country, nil
 	}
 

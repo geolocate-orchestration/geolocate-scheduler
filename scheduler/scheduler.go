@@ -1,12 +1,15 @@
 package scheduler
 
 import (
+	"aida-scheduler/scheduler/algorithms"
 	"aida-scheduler/scheduler/algorithms/geographicLocation"
-	"aida-scheduler/scheduler/utils"
+	"aida-scheduler/scheduler/algorithms/random"
+	"aida-scheduler/scheduler/nodes"
+	"aida-scheduler/utils"
 	"context"
 	"fmt"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -15,12 +18,14 @@ import (
 
 const algorithmName = "geographic_location"
 
-func bind(clientset *kubernetes.Clientset, geo geographicLocation.GeographicLocation, pod *v1.Pod) {
-	node, err := geo.GetNode(pod)
+// const algorithmName = "random"
+
+func bind(clientset *kubernetes.Clientset, algorithm algorithms.Algorithm, pod *v1.Pod) {
+	node, err := algorithm.GetNode(pod)
 
 	if err != nil {
 		klog.Errorln(err)
-		utils.EmitEvent(algorithmName, clientset, pod, nil, err)
+		utils.EmitEvent(algorithmName, clientset, pod, "", err)
 		return
 	}
 
@@ -29,7 +34,7 @@ func bind(clientset *kubernetes.Clientset, geo geographicLocation.GeographicLoca
 	err = clientset.CoreV1().Pods(pod.Namespace).Bind(
 		context.TODO(),
 		&v1.Binding{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: metaV1.ObjectMeta{
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
 			},
@@ -39,16 +44,16 @@ func bind(clientset *kubernetes.Clientset, geo geographicLocation.GeographicLoca
 				Name:       node.Name,
 			},
 		},
-		metav1.CreateOptions{},
+		metaV1.CreateOptions{},
 	)
 
-	utils.EmitEvent(algorithmName, clientset, pod, node, err)
+	utils.EmitEvent(algorithmName, clientset, pod, node.Name, err)
 }
 
-func watch(clientset *kubernetes.Clientset, geo geographicLocation.GeographicLocation) {
+func watch(clientset *kubernetes.Clientset, algorithm algorithms.Algorithm) {
 	watch, err := clientset.CoreV1().Pods("").Watch(
 		context.TODO(),
-		metav1.ListOptions{
+		metaV1.ListOptions{
 			FieldSelector: fmt.Sprintf("spec.schedulerName=aida-scheduler,spec.nodeName="),
 		},
 	)
@@ -66,7 +71,7 @@ func watch(clientset *kubernetes.Clientset, geo geographicLocation.GeographicLoc
 		}
 		pod := event.Object.(*v1.Pod)
 		klog.Infof("found a pod to schedule: %s/%s\n", pod.Namespace, pod.Name)
-		bind(clientset, geo, pod)
+		bind(clientset, algorithm, pod)
 	}
 }
 
@@ -87,8 +92,17 @@ func Run() {
 		os.Exit(2)
 	}
 
-	nodes := utils.New(clientset)
-	geo := geographicLocation.New(nodes)
+	nodesStruct := nodes.New(clientset)
+	var algorithm algorithms.Algorithm
 
-	watch(clientset, geo)
+	switch algorithmName {
+	case "random":
+		algorithm = random.New(nodesStruct)
+	case "geographic_location":
+		algorithm = geographicLocation.New(nodesStruct)
+	default:
+		algorithm = random.New(nodesStruct)
+	}
+
+	watch(clientset, algorithm)
 }
