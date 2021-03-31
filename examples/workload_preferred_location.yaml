@@ -1,0 +1,17 @@
+apiVersion: edge.aida.io/v1
+kind: Deployment
+metadata:
+  name: preferred-location
+spec:
+  replicas: 1
+  preferredLocation:
+    cities:
+      - Braga
+    countries:
+      - Portugal
+      - Germany
+  template:
+    spec:
+      containers:
+        - name: test-app
+          image: nginx:latest

@@ -53,7 +53,7 @@ func watch(clientset *kubernetes.Clientset, algorithm algorithms.Algorithm) {
 	watch, err := clientset.CoreV1().Pods("").Watch(
 		context.TODO(),
 		metaV1.ListOptions{
-			FieldSelector:"spec.schedulerName=aida-scheduler,spec.nodeName=",
+			FieldSelector: "spec.schedulerName=aida-scheduler,spec.nodeName=",
 		},
 	)
 
