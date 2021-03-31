@@ -5,24 +5,32 @@ on:
 name: Publish Docker image
 jobs:
   push_to_registries:
-    name: Push Docker image to multiple registries
+    name: Push Docker image
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-      - name: Push latest to GitHub Packages
-        uses: docker/build-push-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Registry
+        uses: docker/login-action@v1
         with:
-          username: ${{ github.actor }}
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          registry: docker.pkg.github.com
-          repository: aida-dos/aida-scheduler
-          tags: latest
-      - name: Push tag to GitHub Packages
-        uses: docker/build-push-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
         with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: docker.pkg.github.com
-          repository: aida-dos/aida-scheduler
-          tag_with_ref: true
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-buildx-
+
+      - name: Get tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
+
+      - name: Build and Push
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/aida-schedulder:${{ steps.tag.outputs.tag }},ghcr.io/${{ github.repository_owner }}/aida-schedulder:latest

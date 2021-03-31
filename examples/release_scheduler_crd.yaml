@@ -56,7 +56,7 @@ spec:
       serviceAccountName: aida-scheduler
       containers:
         - name: aida-scheduler
-          image: docker.pkg.github.com/aida-dos/aida-scheduler:latest
+          image: ghcr.io/aida-dos/aida-scheduler/aida-scheduler:latest
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
