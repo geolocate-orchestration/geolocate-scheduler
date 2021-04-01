@@ -243,18 +243,6 @@ func TestGetLocationLabelNone(t *testing.T) {
 	getLocationLabel(t, "")
 }
 
-func TestGetRandomNodeEmpty(t *testing.T) {
-	_, err := getRandomNode(newTestNodes(nil, nil, nil, nil))
-	assert.Error(t, err, "no nodes are available")
-}
-
-func TestGetRandomNode(t *testing.T) {
-	nodesStruct := newTestNodes(nil, nil, nil, nil)
-	nodesStruct.Nodes = append(nodesStruct.Nodes, newTestNode("Node0"))
-	node, _ := getRandomNode(nodesStruct)
-	assert.Equal(t, "Node0", node.Name)
-}
-
 func TestParseLocations(t *testing.T) {
 	geoStruct := newTestGeo(nil, nil)
 	locationLabel := "Braga_Porto_Madrid-PT-Europe"
