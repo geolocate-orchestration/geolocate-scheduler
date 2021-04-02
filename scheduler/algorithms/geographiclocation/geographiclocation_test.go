@@ -5,7 +5,7 @@ import (
 	"github.com/aida-dos/gountries"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 )
 
@@ -66,7 +66,7 @@ func newTestPod(typeString string, value string) *v1.Pod {
 	}
 
 	return &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Labels: labels,
 		},
 	}

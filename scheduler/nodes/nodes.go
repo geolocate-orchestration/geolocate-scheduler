@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"aida-scheduler/utils"
+	"errors"
 	"fmt"
 	"github.com/aida-dos/gountries"
 	v1 "k8s.io/api/core/v1"
@@ -40,7 +41,7 @@ func (nodes *Nodes) updateHandler(oldObj interface{}, newObj interface{}) {
 	if !oldHasEdgeLabel && newHasEdgeLabel {
 		// If node wasn't an edge node but now it is, create it in cache
 		nodes.addNode(newNode)
-	} else if oldHasEdgeLabel && newHasEdgeLabel && nodeHasSignificantChanges(oldNode, newNode) {
+	} else if oldHasEdgeLabel && newHasEdgeLabel {
 		// If the node is an edge node and has significant update it in cache
 		nodes.updateNode(oldNode, newNode)
 	} else if oldHasEdgeLabel && !newHasEdgeLabel {
@@ -61,12 +62,23 @@ func (nodes *Nodes) addNode(objNode *v1.Node) {
 		return
 	}
 
-	node := &Node{Name: objNode.Name}
-	cityValue := objNode.Labels[cityLabel]
-	countryValue := objNode.Labels[countryLabel]
-	continentValue := objNode.Labels[continentLabel]
+	node := &Node{
+		Name:   objNode.Name,
+		Labels: objNode.Labels,
+		CPU:    objNode.Status.Allocatable.Cpu().MilliValue(),
+		Memory: objNode.Status.Allocatable.Memory().MilliValue(),
+	}
 
 	nodes.Nodes = append(nodes.Nodes, node)
+	nodes.addToCities(node)
+	nodes.addToCountries(node)
+	nodes.addToContinents(node)
+
+	klog.Infof("new node added to cache: %s\n", node.Name)
+}
+
+func (nodes *Nodes) addToCities(node *Node) {
+	cityValue := node.Labels[cityLabel]
 
 	if cityValue != "" {
 		if city, err := nodes.Query.FindSubdivisionByName(cityValue); err == nil {
@@ -76,6 +88,10 @@ func (nodes *Nodes) addNode(objNode *v1.Node) {
 			klog.Errorln(err)
 		}
 	}
+}
+
+func (nodes *Nodes) addToCountries(node *Node) {
+	countryValue := node.Labels[countryLabel]
 
 	if countryValue != "" {
 		if country, err := nodes.findCountry(countryValue); err == nil {
@@ -84,6 +100,10 @@ func (nodes *Nodes) addNode(objNode *v1.Node) {
 			klog.Errorln(err)
 		}
 	}
+}
+
+func (nodes *Nodes) addToContinents(node *Node) {
+	continentValue := node.Labels[continentLabel]
 
 	if continentValue != "" {
 		if continent, err := nodes.ContinentsList.FindContinent(continentValue); err == nil {
@@ -92,15 +112,30 @@ func (nodes *Nodes) addNode(objNode *v1.Node) {
 			klog.Errorln(err)
 		}
 	}
-
-	klog.Infof("new node added to cache: %s\n", node.Name)
 }
 
 func (nodes *Nodes) updateNode(oldNode *v1.Node, newNode *v1.Node) {
-	klog.Infof("node will be updated in cache: %s\n", oldNode.Name)
-	// TODO: I know it could be more efficient
-	nodes.deleteNode(oldNode)
-	nodes.addNode(newNode)
+	if nodeHasSignificantChanges(oldNode, newNode) {
+		klog.Infof("node will be replaced in cache: %s\n", oldNode.Name)
+		nodes.deleteNode(oldNode)
+		nodes.addNode(newNode)
+	} else {
+		klog.Infof("node will be updated in cache: %s\n", oldNode.Name)
+		node, _ := nodes.findNodeByName(newNode.Name)
+		node.Labels = newNode.Labels
+		node.CPU = newNode.Status.Allocatable.Cpu().MilliValue()
+		node.Memory = newNode.Status.Allocatable.Memory().MilliValue()
+	}
+}
+
+func (nodes *Nodes) findNodeByName(name string) (*Node, error) {
+	for _, node := range nodes.Nodes {
+		if node.Name == name {
+			return node, nil
+		}
+	}
+
+	return nil, errors.New("node with given name not found")
 }
 
 func (nodes *Nodes) deleteNode(objNode *v1.Node) {

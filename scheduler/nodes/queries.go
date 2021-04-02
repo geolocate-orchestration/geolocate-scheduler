@@ -15,9 +15,10 @@ func (nodes *Nodes) CountNodes() int {
 }
 
 // FindAnyNodeByCity returns one node in given city if exists
-func (nodes *Nodes) FindAnyNodeByCity(cities []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByCity(cities []string, filter *NodeFilter) (*Node, error) {
 	for _, city := range cities {
-		if node, err := nodes.getNodeByCity(city); err == nil {
+		node, err := nodes.getNodeByCity(city)
+		if err == nil && nodeMatchesFilters(node, filter) {
 			return node, nil
 		}
 	}
@@ -26,15 +27,17 @@ func (nodes *Nodes) FindAnyNodeByCity(cities []string) (*Node, error) {
 }
 
 // FindAnyNodeByCityCountry returns one node in given city country if exists
-func (nodes *Nodes) FindAnyNodeByCityCountry(cities []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByCityCountry(cities []string, filter *NodeFilter) (*Node, error) {
 	for _, city := range cities {
 		countryResult, err := nodes.Query.FindSubdivisionCountryByName(city)
 		if err != nil {
 			// If subdivision name does not exists return error
 			return nil, err
 		}
-		// If any node exists in the given city country return it
-		if node, err := nodes.getNodeByCountry(countryResult.Alpha2); err == nil {
+
+		node, err := nodes.getNodeByCountry(countryResult.Alpha2)
+		if err == nil && nodeMatchesFilters(node, filter) {
+			// If any node exists in the given city country return it
 			return node, nil
 		}
 	}
@@ -43,15 +46,17 @@ func (nodes *Nodes) FindAnyNodeByCityCountry(cities []string) (*Node, error) {
 }
 
 // FindAnyNodeByCityContinent returns one node in given city continent if exists
-func (nodes *Nodes) FindAnyNodeByCityContinent(cities []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByCityContinent(cities []string, filter *NodeFilter) (*Node, error) {
 	for _, city := range cities {
 		countryResult, err := nodes.Query.FindSubdivisionCountryByName(city)
 		if err != nil {
 			// If subdivision name does not exists return error
 			return nil, err
 		}
-		// If any node exists in the given city continent return it
-		if node, err := nodes.getNodeByContinent(countryResult.Continent); err == nil {
+
+		node, err := nodes.getNodeByContinent(countryResult.Continent)
+		if err == nil && nodeMatchesFilters(node, filter) {
+			// If any node exists in the given city continent return it
 			return node, nil
 		}
 	}
@@ -60,12 +65,16 @@ func (nodes *Nodes) FindAnyNodeByCityContinent(cities []string) (*Node, error) {
 }
 
 // FindAnyNodeByCountry returns one node in given country if exists
-func (nodes *Nodes) FindAnyNodeByCountry(countries []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByCountry(countries []string, filter *NodeFilter) (*Node, error) {
 	for _, countryID := range countries {
-		if country, err := nodes.findCountry(countryID); err != nil {
+		country, err := nodes.findCountry(countryID)
+		if err != nil {
 			// If country identifier string does not match any country return error
 			return nil, err
-		} else if node, err := nodes.getNodeByCountry(country.Alpha2); err == nil {
+		}
+
+		node, err := nodes.getNodeByCountry(country.Alpha2)
+		if err == nil && nodeMatchesFilters(node, filter) {
 			// If any node exists in the given country return it
 			return node, nil
 		}
@@ -75,12 +84,16 @@ func (nodes *Nodes) FindAnyNodeByCountry(countries []string) (*Node, error) {
 }
 
 // FindAnyNodeByCountryContinent returns one node in given country continent if exists
-func (nodes *Nodes) FindAnyNodeByCountryContinent(countries []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByCountryContinent(countries []string, filter *NodeFilter) (*Node, error) {
 	for _, countryID := range countries {
-		if country, err := nodes.findCountry(countryID); err != nil {
+		country, err := nodes.findCountry(countryID)
+		if err != nil {
 			// If country identifier string does not match any country return error
 			return nil, err
-		} else if node, err := nodes.getNodeByContinent(country.Continent); err == nil {
+		}
+
+		node, err := nodes.getNodeByContinent(country.Continent)
+		if err == nil && nodeMatchesFilters(node, filter) {
 			// If any node exists in the given continent return it
 			return node, nil
 		}
@@ -90,9 +103,10 @@ func (nodes *Nodes) FindAnyNodeByCountryContinent(countries []string) (*Node, er
 }
 
 // FindAnyNodeByContinent returns one node in given continent if exists
-func (nodes *Nodes) FindAnyNodeByContinent(continents []string) (*Node, error) {
+func (nodes *Nodes) FindAnyNodeByContinent(continents []string, filter *NodeFilter) (*Node, error) {
 	for _, continentsID := range continents {
-		if node, err := nodes.getNodeByContinent(continentsID); err == nil {
+		node, err := nodes.getNodeByContinent(continentsID)
+		if err == nil && nodeMatchesFilters(node, filter) {
 			// If any node exists in the given continent return it
 			return node, nil
 		}

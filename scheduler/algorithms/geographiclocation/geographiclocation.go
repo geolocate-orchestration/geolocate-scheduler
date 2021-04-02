@@ -95,15 +95,15 @@ func (geo *geographiclocation) getRequestedLocation() (*nodes.Node, error) {
 }
 
 func (geo *geographiclocation) getSimilarToRequestedLocation() (*nodes.Node, error) {
-	if node, err := geo.nodes.FindAnyNodeByCityCountry(geo.cities); err == nil {
+	if node, err := geo.nodes.FindAnyNodeByCityCountry(geo.cities, nil); err == nil {
 		return node, nil
 	}
 
-	if node, err := geo.nodes.FindAnyNodeByCityContinent(geo.cities); err == nil {
+	if node, err := geo.nodes.FindAnyNodeByCityContinent(geo.cities, nil); err == nil {
 		return node, nil
 	}
 
-	if node, err := geo.nodes.FindAnyNodeByCountryContinent(geo.countries); err == nil {
+	if node, err := geo.nodes.FindAnyNodeByCountryContinent(geo.countries, nil); err == nil {
 		return node, nil
 	}
 
@@ -113,7 +113,7 @@ func (geo *geographiclocation) getSimilarToRequestedLocation() (*nodes.Node, err
 // GetBy
 
 func (geo *geographiclocation) getByCity() (*nodes.Node, error) {
-	if node, err := geo.nodes.FindAnyNodeByCity(geo.cities); err == nil {
+	if node, err := geo.nodes.FindAnyNodeByCity(geo.cities, nil); err == nil {
 		return node, nil
 	}
 
@@ -121,7 +121,7 @@ func (geo *geographiclocation) getByCity() (*nodes.Node, error) {
 }
 
 func (geo *geographiclocation) getByCountry() (*nodes.Node, error) {
-	if node, err := geo.nodes.FindAnyNodeByCountry(geo.countries); err == nil {
+	if node, err := geo.nodes.FindAnyNodeByCountry(geo.countries, nil); err == nil {
 		return node, nil
 	}
 
@@ -129,7 +129,7 @@ func (geo *geographiclocation) getByCountry() (*nodes.Node, error) {
 }
 
 func (geo *geographiclocation) getByContinent() (*nodes.Node, error) {
-	if node, err := geo.nodes.FindAnyNodeByContinent(geo.continents); err == nil {
+	if node, err := geo.nodes.FindAnyNodeByContinent(geo.continents, nil); err == nil {
 		return node, nil
 	}
 

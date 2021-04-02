@@ -9,12 +9,12 @@ import (
 type INodes interface {
 	GetAllNodes() []*Node
 	CountNodes() int
-	FindAnyNodeByCity(cities []string) (*Node, error)
-	FindAnyNodeByCityCountry(cities []string) (*Node, error)
-	FindAnyNodeByCityContinent(cities []string) (*Node, error)
-	FindAnyNodeByCountry(countries []string) (*Node, error)
-	FindAnyNodeByCountryContinent(countries []string) (*Node, error)
-	FindAnyNodeByContinent(continents []string) (*Node, error)
+	FindAnyNodeByCity(cities []string, filter *NodeFilter) (*Node, error)
+	FindAnyNodeByCityCountry(cities []string, filter *NodeFilter) (*Node, error)
+	FindAnyNodeByCityContinent(cities []string, filter *NodeFilter) (*Node, error)
+	FindAnyNodeByCountry(countries []string, filter *NodeFilter) (*Node, error)
+	FindAnyNodeByCountryContinent(countries []string, filter *NodeFilter) (*Node, error)
+	FindAnyNodeByContinent(continents []string, filter *NodeFilter) (*Node, error)
 }
 
 // Nodes controls in-cache nodes
@@ -32,7 +32,17 @@ type Nodes struct {
 
 // Node represents a cluster Node
 type Node struct {
-	Name string
+	Name   string
+	Labels map[string]string
+	CPU    int64
+	Memory int64
+}
+
+// Node states the params which nodes must match to be returned
+type NodeFilter struct {
+	Labels []string
+	CPU    int64
+	Memory int64
 }
 
 const (
