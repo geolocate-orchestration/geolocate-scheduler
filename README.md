@@ -2,6 +2,10 @@
 
 [![Test](https://github.com/aida-dos/aida-scheduler/actions/workflows/test.yml/badge.svg?branch=develop)](https://github.com/aida-dos/aida-scheduler/actions/workflows/test.yml)
 
+> :warning: First, make sure you have deployed or are running the aida-controller in the cluster by following the instructions in
+the [project repository](https://github.com/aida-dos/aida-controller). This controller is responsible for the management and reconciliation of the AIDA EdgeDeployments, which are the
+the resource type of our workloads.
+
 ## Deployment
 
 ```shell
@@ -14,14 +18,6 @@ docker build -t aida-scheduler .
 ```
 
 ## Development
-
-### Run the aida-controller
-
-First, make sure you have deployed or are running the aida-controller in the cluster by following the instructions in
-the [project repository](https://github.com/aida-dos/aida-controller).
-
-This controller is responsible for the management and reconciliation of the AIDA EdgeDeployments, which are the
-the resource type of our workloads.
 
 ### Run the aida-scheduler
 

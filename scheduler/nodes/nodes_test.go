@@ -4,8 +4,7 @@ import (
 	"github.com/aida-dos/gountries"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 )
 
@@ -21,7 +20,7 @@ func newTestNode(name string, edge bool, city string, country string, continent 
 	}
 
 	return &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:   name,
 			Labels: labels,
 		},
@@ -49,8 +48,27 @@ func TestNew(t *testing.T) {
 
 func TestGetAndCountNodes(t *testing.T) {
 	nodes := newTestNodes()
-	assert.Equal(t, 0, nodes.CountNodes())
-	assert.Equal(t, 0, len(nodes.GetAllNodes()))
+	node := newTestNode("Node0", true, "Braga", "Portugal", "Europe")
+	nodes.addNode(node)
+
+	assert.Equal(t, 1, nodes.CountNodes())
+	assert.Equal(t, 1, len(nodes.GetAllNodes()))
+}
+
+func TestGetNodesFilter(t *testing.T) {
+	nodes := newTestNodes()
+	filter := &NodeFilter{CPU: 5000}
+
+	node0 := &Node{Name: "Node0", CPU: 2500}
+	nodes.Nodes = append(nodes.Nodes, node0)
+
+	assert.Equal(t, 0, len(nodes.GetNodes(filter)))
+
+	node1 := &Node{Name: "Node1", CPU: 10000}
+	nodes.Nodes = append(nodes.Nodes, node1)
+
+	assert.Equal(t, 1, len(nodes.GetNodes(filter)))
+	assert.Equal(t, "Node1", nodes.GetNodes(filter)[0].Name)
 }
 
 func TestAddEdgeNode(t *testing.T) {
@@ -59,15 +77,13 @@ func TestAddEdgeNode(t *testing.T) {
 
 	nodes.addNode(node)
 
-	klog.Errorln(nodes)
-
-	cityNode, _ := nodes.FindAnyNodeByCity([]string{"Braga"})
+	cityNode, _ := nodes.FindAnyNodeByCity([]string{"Braga"}, nil)
 	assert.Equal(t, "Node0", cityNode.Name)
 
-	countryNode, _ := nodes.FindAnyNodeByCountry([]string{"Portugal"})
+	countryNode, _ := nodes.FindAnyNodeByCountry([]string{"Portugal"}, nil)
 	assert.Equal(t, "Node0", countryNode.Name)
 
-	continentNode, _ := nodes.FindAnyNodeByContinent([]string{"Europe"})
+	continentNode, _ := nodes.FindAnyNodeByContinent([]string{"Europe"}, nil)
 	assert.Equal(t, "Node0", continentNode.Name)
 }
 
@@ -90,7 +106,7 @@ func TestAddNormalNode(t *testing.T) {
 	assert.Equal(t, 0, nodes.CountNodes())
 }
 
-func TestUpdateNode(t *testing.T) {
+func TestUpdateNodeCoreData(t *testing.T) {
 	nodes := newTestNodes()
 	oldNode := newTestNode("Node0", true, "Braga", "Portugal", "Europe")
 
@@ -104,6 +120,20 @@ func TestUpdateNode(t *testing.T) {
 
 	assert.Equal(t, 0, len(nodes.Cities["PT-03"]))
 	assert.Equal(t, 1, len(nodes.Cities["PT-13"]))
+}
+
+func TestUpdateNodeResources(t *testing.T) {
+	nodes := newTestNodes()
+	oldNode := newTestNode("Node0", true, "Braga", "Portugal", "Europe")
+
+	nodes.addNode(oldNode)
+
+	newNode := newTestNode("Node0", true, "Braga", "Portugal", "Europe")
+	newNode.Labels["test_label"] = "test"
+
+	nodes.updateNode(oldNode, newNode)
+
+	assert.Equal(t, "test", nodes.Nodes[0].Labels["test_label"])
 }
 
 func TestDeleteEdgeNode(t *testing.T) {
@@ -138,32 +168,32 @@ func TestFindByCity(t *testing.T) {
 
 	nodes.addNode(node)
 
-	cityNode, _ := nodes.FindAnyNodeByCity([]string{"Braga"})
+	cityNode, _ := nodes.FindAnyNodeByCity([]string{"Braga"}, nil)
 	assert.Equal(t, "Node0", cityNode.Name)
 
-	countryNode, _ := nodes.FindAnyNodeByCityCountry([]string{"Porto"})
+	countryNode, _ := nodes.FindAnyNodeByCityCountry([]string{"Porto"}, nil)
 	assert.Equal(t, "Node0", countryNode.Name)
 
-	continentNode, _ := nodes.FindAnyNodeByCityContinent([]string{"Madrid"})
+	continentNode, _ := nodes.FindAnyNodeByCityContinent([]string{"Madrid"}, nil)
 	assert.Equal(t, "Node0", continentNode.Name)
 }
 
 func TestFindByCityError(t *testing.T) {
 	nodes := newTestNodes()
 
-	_, err0 := nodes.FindAnyNodeByCity([]string{"Braga"})
+	_, err0 := nodes.FindAnyNodeByCity([]string{"Braga"}, nil)
 	assert.Error(t, err0)
 
-	_, err1 := nodes.FindAnyNodeByCityCountry([]string{"Braga"})
+	_, err1 := nodes.FindAnyNodeByCityCountry([]string{"Braga"}, nil)
 	assert.Error(t, err1)
 
-	_, err2 := nodes.FindAnyNodeByCityCountry([]string{"RANDOM_C_123"})
+	_, err2 := nodes.FindAnyNodeByCityCountry([]string{"RANDOM_C_123"}, nil)
 	assert.Error(t, err2)
 
-	_, err3 := nodes.FindAnyNodeByCityContinent([]string{"Braga"})
+	_, err3 := nodes.FindAnyNodeByCityContinent([]string{"Braga"}, nil)
 	assert.Error(t, err3)
 
-	_, err4 := nodes.FindAnyNodeByCityContinent([]string{"RANDOM_C_123"})
+	_, err4 := nodes.FindAnyNodeByCityContinent([]string{"RANDOM_C_123"}, nil)
 	assert.Error(t, err4)
 
 	_, err5 := nodes.getNodeByCity("Braga")
@@ -179,26 +209,26 @@ func TestFindByCountry(t *testing.T) {
 
 	nodes.addNode(node)
 
-	countryNode, _ := nodes.FindAnyNodeByCountry([]string{"PT"})
+	countryNode, _ := nodes.FindAnyNodeByCountry([]string{"PT"}, nil)
 	assert.Equal(t, "Node0", countryNode.Name)
 
-	continentNode, _ := nodes.FindAnyNodeByCountryContinent([]string{"Spain"})
+	continentNode, _ := nodes.FindAnyNodeByCountryContinent([]string{"Spain"}, nil)
 	assert.Equal(t, "Node0", continentNode.Name)
 }
 
 func TestFindByCountryError(t *testing.T) {
 	nodes := newTestNodes()
 
-	_, err0 := nodes.FindAnyNodeByCountry([]string{"Portugal"})
+	_, err0 := nodes.FindAnyNodeByCountry([]string{"Portugal"}, nil)
 	assert.Error(t, err0)
 
-	_, err1 := nodes.FindAnyNodeByCountry([]string{"RANDOM_C_123"})
+	_, err1 := nodes.FindAnyNodeByCountry([]string{"RANDOM_C_123"}, nil)
 	assert.Error(t, err1)
 
-	_, err2 := nodes.FindAnyNodeByCountryContinent([]string{"Portugal"})
+	_, err2 := nodes.FindAnyNodeByCountryContinent([]string{"Portugal"}, nil)
 	assert.Error(t, err2)
 
-	_, err3 := nodes.FindAnyNodeByCountryContinent([]string{"RANDOM_C_123"})
+	_, err3 := nodes.FindAnyNodeByCountryContinent([]string{"RANDOM_C_123"}, nil)
 	assert.Error(t, err3)
 
 	_, err4 := nodes.getNodeByCountry("Portugal")
@@ -211,14 +241,14 @@ func TestFindByContinent(t *testing.T) {
 
 	nodes.addNode(node)
 
-	continentNode, _ := nodes.FindAnyNodeByContinent([]string{"Europe"})
+	continentNode, _ := nodes.FindAnyNodeByContinent([]string{"Europe"}, nil)
 	assert.Equal(t, "Node0", continentNode.Name)
 }
 
 func TestFindByContinentError(t *testing.T) {
 	nodes := newTestNodes()
 
-	_, err0 := nodes.FindAnyNodeByContinent([]string{"Europe"})
+	_, err0 := nodes.FindAnyNodeByContinent([]string{"Europe"}, nil)
 	assert.Error(t, err0)
 
 	_, err1 := nodes.getNodeByContinent("Europe")
@@ -287,4 +317,69 @@ func TestDeleteHandler(t *testing.T) {
 	assert.Equal(t, 1, nodes.CountNodes())
 	nodes.deleteHandler(node)
 	assert.Equal(t, 0, nodes.CountNodes())
+}
+
+func TestFindNodeByName(t *testing.T) {
+	nodes := newTestNodes()
+	node := newTestNode("Node0", true, "Braga", "Portugal", "Europe")
+
+	nodes.addNode(node)
+
+	foundNode, _ := nodes.findNodeByName("Node0")
+	assert.Equal(t, "Node0", foundNode.Name)
+
+	_, err := nodes.findNodeByName("Node1")
+	assert.Error(t, err)
+}
+
+func newNodeFilter(
+	nodeLabel string, nodeCPU int64, nodeMemory int64,
+	filterLabel string, filterCPU int64, filterMemory int64,
+) (*Node, *NodeFilter) {
+
+	node := &Node{
+		Labels: map[string]string{
+			nodeLabel: "test",
+		},
+		CPU:    nodeCPU,
+		Memory: nodeMemory,
+	}
+
+	filter := &NodeFilter{
+		Labels: []string{filterLabel},
+		CPU:    filterCPU,
+		Memory: filterMemory,
+	}
+
+	return node, filter
+}
+
+func TestNodeFilter(t *testing.T) {
+	node, filter := newNodeFilter("test", 10, 10, "test", 1, 1)
+	assert.True(t, nodeMatchesFilters(node, filter))
+}
+
+func TestNodeNoFilter(t *testing.T) {
+	node, _ := newNodeFilter("test", 10, 10, "test", 1, 1)
+	assert.True(t, nodeMatchesFilters(node, &NodeFilter{}))
+}
+
+func TestNodeFilterFailLabel(t *testing.T) {
+	node, filter := newNodeFilter("test", 10, 10, "test1", 1, 1)
+	assert.False(t, nodeMatchesFilters(node, filter))
+}
+
+func TestNodeFilterFailCPU(t *testing.T) {
+	node, filter := newNodeFilter("test", 0, 10, "test", 1, 1)
+	assert.False(t, nodeMatchesFilters(node, filter))
+}
+
+func TestNodeFilterFailMemory(t *testing.T) {
+	node, filter := newNodeFilter("test", 10, 0, "test", 1, 1)
+	assert.False(t, nodeMatchesFilters(node, filter))
+}
+
+func TestGetRandomEmptyError(t *testing.T) {
+	_, err := GetRandom([]*Node{})
+	assert.Error(t, err)
 }

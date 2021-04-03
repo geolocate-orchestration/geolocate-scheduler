@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"time"
 )
@@ -20,14 +20,14 @@ func EmitEvent(algorithmName string, clientset *kubernetes.Clientset, pod *v1.Po
 			Count:          1,
 			Message:        message,
 			Reason:         reason,
-			LastTimestamp:  metav1.NewTime(timestamp),
-			FirstTimestamp: metav1.NewTime(timestamp),
+			LastTimestamp:  metaV1.NewTime(timestamp),
+			FirstTimestamp: metaV1.NewTime(timestamp),
 			Type:           eventType,
 			Source:         eventSource(algorithmName),
 			InvolvedObject: involvedObject(pod),
 			ObjectMeta:     objectMeta(pod),
 		},
-		metav1.CreateOptions{},
+		metaV1.CreateOptions{},
 	)
 }
 
@@ -46,8 +46,8 @@ func eventSource(algorithmName string) v1.EventSource {
 	}
 }
 
-func objectMeta(pod *v1.Pod) metav1.ObjectMeta {
-	return metav1.ObjectMeta{
+func objectMeta(pod *v1.Pod) metaV1.ObjectMeta {
+	return metaV1.ObjectMeta{
 		GenerateName: pod.Name + "-",
 	}
 }
