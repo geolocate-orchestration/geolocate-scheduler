@@ -57,6 +57,9 @@ spec:
       containers:
         - name: aida-scheduler
           image: ghcr.io/aida-dos/aida-scheduler/aida-scheduler:latest
+          env:
+            - name: ALGORITHM
+              value: metricslocation
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

@@ -1,11 +1,20 @@
-FROM golang:1.16-alpine
+FROM golang:1.16-alpine as builder
 
-WORKDIR /code
+WORKDIR /workspace
 
-COPY . .
-RUN go build && mv aida-scheduler /aida-scheduler
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY utils/ utils/
+COPY main.go main.go
+COPY scheduler/ scheduler/
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build
+
+
+FROM gcr.io/distroless/static:nonroot
 
 WORKDIR /
-RUN rm -rf /code
+COPY --from=builder /workspace/aida-scheduler .
+USER nonroot:nonroot
 
-CMD /aida-scheduler
+ENTRYPOINT ["/aida-scheduler"]
