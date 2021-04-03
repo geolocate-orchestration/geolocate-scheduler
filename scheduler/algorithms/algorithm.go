@@ -7,5 +7,6 @@ import (
 
 // Algorithm interface that exposes GetNode method
 type Algorithm interface {
+	GetName() string
 	GetNode(pod *v1.Pod) (*nodes.Node, error)
 }

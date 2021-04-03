@@ -293,3 +293,9 @@ func TestNotEnoughMemoryResources(t *testing.T) {
 	_, err := geoStruct.GetNode(pod)
 	assert.Error(t, err)
 }
+
+func TestGetName(t *testing.T) {
+	geoStruct := newTestGeo(nil, nil)
+	name := geoStruct.GetName()
+	assert.Equal(t, "metricslocation", name)
+}

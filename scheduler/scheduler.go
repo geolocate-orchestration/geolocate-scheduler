@@ -8,6 +8,7 @@ import (
 	"aida-scheduler/scheduler/nodes"
 	"aida-scheduler/utils"
 	"context"
+	"errors"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -16,16 +17,14 @@ import (
 	"os"
 )
 
-const algorithmName = "geographiclocation"
-
-// const algorithmName = "random"
+var availableAlgorithms = []string{"metricslocation", "geographiclocation", "random"}
 
 func bind(clientset *kubernetes.Clientset, algorithm algorithms.Algorithm, pod *v1.Pod) {
 	node, err := algorithm.GetNode(pod)
 
 	if err != nil {
 		klog.Errorln(err)
-		utils.EmitEvent(algorithmName, clientset, pod, "", err)
+		utils.EmitEvent(algorithm.GetName(), clientset, pod, "", err)
 		return
 	}
 
@@ -47,7 +46,7 @@ func bind(clientset *kubernetes.Clientset, algorithm algorithms.Algorithm, pod *
 		metaV1.CreateOptions{},
 	)
 
-	utils.EmitEvent(algorithmName, clientset, pod, node.Name, err)
+	utils.EmitEvent(algorithm.GetName(), clientset, pod, node.Name, err)
 }
 
 func watch(clientset *kubernetes.Clientset, algorithm algorithms.Algorithm) {
@@ -75,9 +74,40 @@ func watch(clientset *kubernetes.Clientset, algorithm algorithms.Algorithm) {
 	}
 }
 
+func algorithmExists(algorithmName string) bool {
+	for _, algorithm := range availableAlgorithms {
+		if algorithm == algorithmName {
+			return true
+		}
+	}
+
+	return false
+}
+
+func initAlgorithm(algorithmName string, nodesStruct nodes.INodes) algorithms.Algorithm {
+	var algorithm algorithms.Algorithm
+
+	switch algorithmName {
+	case "random":
+		algorithm = random.New(nodesStruct)
+	case "geographiclocation":
+		algorithm = geographiclocation.New(nodesStruct)
+	case "metricslocation":
+		algorithm = metricslocation.New(nodesStruct)
+	default:
+		algorithm = random.New(nodesStruct)
+	}
+
+	return algorithm
+}
+
 // Run init the scheduler service
-func Run() {
-	klog.Infof("starting %s aida-scheduler...\n", algorithmName)
+func Run(algorithmName string) error {
+	if !algorithmExists(algorithmName) {
+		return errors.New("selected algorithm does not exist")
+	}
+
+	klog.Infof("starting aida-scheduler - %s algorithm...\n", algorithmName)
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -94,18 +124,9 @@ func Run() {
 	}
 
 	nodesStruct := nodes.New(clientset)
-	var algorithm algorithms.Algorithm
-
-	switch algorithmName {
-	case "random":
-		algorithm = random.New(nodesStruct)
-	case "geographiclocation":
-		algorithm = geographiclocation.New(nodesStruct)
-	case "metricslocation":
-		algorithm = metricslocation.New(nodesStruct)
-	default:
-		algorithm = random.New(nodesStruct)
-	}
+	algorithm := initAlgorithm(algorithmName, nodesStruct)
 
 	watch(clientset, algorithm)
+
+	return nil
 }

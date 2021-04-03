@@ -36,3 +36,9 @@ func TestGetNode(t *testing.T) {
 	node, _ := getRandomNode(newTestRandomWithNode())
 	assert.Equal(t, "Node0", node.Name)
 }
+
+func TestGetName(t *testing.T) {
+	randomStruct := newTestRandom()
+	name := randomStruct.GetName()
+	assert.Equal(t, "random", name)
+}

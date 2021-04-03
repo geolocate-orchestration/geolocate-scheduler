@@ -19,6 +19,10 @@ func New(inodes nodes.INodes) algorithms.Algorithm {
 	}
 }
 
+func (r random) GetName() string {
+	return "random"
+}
+
 func (r random) GetNode(*v1.Pod) (*nodes.Node, error) {
 	klog.Infoln("getting cached nodes")
 	return getRandomNode(r.inodes)

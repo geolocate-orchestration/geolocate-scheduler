@@ -1,7 +1,18 @@
 package main
 
-import "aida-scheduler/scheduler"
+import (
+	"aida-scheduler/scheduler"
+	"k8s.io/klog/v2"
+	"os"
+)
 
 func main() {
-	scheduler.Run()
+	algorithm := os.Getenv("ALGORITHM")
+
+	if algorithm == "" {
+		algorithm = "metricslocation"
+	}
+
+	err := scheduler.Run(algorithm)
+	klog.Errorln(err)
 }

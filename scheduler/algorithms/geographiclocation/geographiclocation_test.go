@@ -252,3 +252,9 @@ func TestParseLocations(t *testing.T) {
 	assert.Equal(t, 1, len(geoStruct.countries))
 	assert.Equal(t, 1, len(geoStruct.continents))
 }
+
+func TestGetName(t *testing.T) {
+	geoStruct := newTestGeo(nil, nil)
+	name := geoStruct.GetName()
+	assert.Equal(t, "geographiclocation", name)
+}

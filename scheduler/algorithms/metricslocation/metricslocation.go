@@ -31,6 +31,10 @@ func New(nodes nodes.INodes) algorithms.Algorithm {
 	}
 }
 
+func (geo *metricslocation) GetName() string {
+	return "metricslocation"
+}
+
 // GetNode select the best node matching the given constraints labels
 // It returns error if there are no nodes available and if no node matches an existing 'requiredLocation' label
 func (geo *metricslocation) GetNode(pod *v1.Pod) (*nodes.Node, error) {
