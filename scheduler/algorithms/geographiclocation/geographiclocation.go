@@ -2,7 +2,6 @@ package geographiclocation
 
 import (
 	"aida-scheduler/scheduler/algorithms"
-	"aida-scheduler/scheduler/algorithms/random"
 	"aida-scheduler/scheduler/nodes"
 	"errors"
 	v1 "k8s.io/api/core/v1"
@@ -48,7 +47,7 @@ func (geo *geographiclocation) GetNode(pod *v1.Pod) (*nodes.Node, error) {
 		node, err = geo.getNodeByLocation()
 	} else {
 		// Node location labels were set so returning a random node
-		node, err = random.GetRandomNode(geo.nodes)
+		node, err = nodes.GetRandom(geo.nodes.GetAllNodes())
 	}
 
 	return node, err
@@ -75,7 +74,7 @@ func (geo *geographiclocation) getNodeByLocation() (*nodes.Node, error) {
 	}
 
 	// when location is "preferred" and there are no matching nodes, return random node
-	return random.GetRandomNode(geo.nodes)
+	return nodes.GetRandom(geo.nodes.GetAllNodes())
 }
 
 func (geo *geographiclocation) getRequestedLocation() (*nodes.Node, error) {

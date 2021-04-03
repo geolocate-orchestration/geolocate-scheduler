@@ -15,3 +15,7 @@ spec:
       containers:
         - name: test-app
           image: nginx:latest
+      resources:
+        requests:
+          memory: 64Mi
+          cpu: 250m

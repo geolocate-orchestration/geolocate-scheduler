@@ -5,15 +5,15 @@ func nodeMatchesFilters(node *Node, filter *NodeFilter) bool {
 		return true
 	}
 
-	if filter.Labels == nil || !nodeHasLabels(node, filter.Labels) {
+	if filter.Labels != nil && !nodeHasLabels(node, filter.Labels) {
 		return false
 	}
 
-	if filter.CPU == 0 || !nodeHasAllocatableCPU(node, filter.CPU) {
+	if filter.CPU != 0 && !nodeHasAllocatableCPU(node, filter.CPU) {
 		return false
 	}
 
-	if filter.Memory == 0 || !nodeHasAllocatableMemory(node, filter.Memory) {
+	if filter.Memory != 0 && !nodeHasAllocatableMemory(node, filter.Memory) {
 		return false
 	}
 

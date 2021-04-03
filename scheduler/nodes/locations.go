@@ -15,7 +15,7 @@ func (nodes *Nodes) getNodeByCity(cityName string) (*Node, error) {
 
 	cityCode := fmt.Sprintf("%s-%s", city.CountryAlpha2, city.Code)
 	if options, ok := nodes.Cities[cityCode]; ok {
-		return GetRandom(options), nil
+		return GetRandom(options)
 	}
 
 	return nil, errors.New("no node matches city")
@@ -23,7 +23,7 @@ func (nodes *Nodes) getNodeByCity(cityName string) (*Node, error) {
 
 func (nodes *Nodes) getNodeByCountry(countryCode string) (*Node, error) {
 	if options, ok := nodes.Countries[countryCode]; ok {
-		return GetRandom(options), nil
+		return GetRandom(options)
 	}
 
 	return nil, errors.New("no nodes match given country")
@@ -37,7 +37,7 @@ func (nodes *Nodes) getNodeByContinent(continentName string) (*Node, error) {
 	}
 
 	if options, ok := nodes.Continents[continent.Code]; ok {
-		return GetRandom(options), nil
+		return GetRandom(options)
 	}
 
 	return nil, errors.New("no node matches given continent")

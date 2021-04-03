@@ -33,6 +33,6 @@ func TestGetNodeEmpty(t *testing.T) {
 }
 
 func TestGetNode(t *testing.T) {
-	node, _ := GetRandomNode(newTestRandomWithNode())
+	node, _ := getRandomNode(newTestRandomWithNode())
 	assert.Equal(t, "Node0", node.Name)
 }

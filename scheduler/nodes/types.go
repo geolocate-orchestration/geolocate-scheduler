@@ -7,8 +7,9 @@ import (
 
 // INodes exports all node controller public methods
 type INodes interface {
-	GetAllNodes() []*Node
 	CountNodes() int
+	GetAllNodes() []*Node
+	GetNodes(filter *NodeFilter) []*Node
 	FindAnyNodeByCity(cities []string, filter *NodeFilter) (*Node, error)
 	FindAnyNodeByCityCountry(cities []string, filter *NodeFilter) (*Node, error)
 	FindAnyNodeByCityContinent(cities []string, filter *NodeFilter) (*Node, error)
@@ -38,7 +39,7 @@ type Node struct {
 	Memory int64
 }
 
-// Node states the params which nodes must match to be returned
+// NodeFilter states the params which nodes must match to be returned
 type NodeFilter struct {
 	Labels []string
 	CPU    int64

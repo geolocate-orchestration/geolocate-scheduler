@@ -21,11 +21,11 @@ func New(inodes nodes.INodes) algorithms.Algorithm {
 
 func (r random) GetNode(*v1.Pod) (*nodes.Node, error) {
 	klog.Infoln("getting cached nodes")
-	return GetRandomNode(r.inodes)
+	return getRandomNode(r.inodes)
 }
 
 // GetRandomNode returns a random
-func GetRandomNode(inodes nodes.INodes) (*nodes.Node, error) {
+func getRandomNode(inodes nodes.INodes) (*nodes.Node, error) {
 	allNodes := inodes.GetAllNodes()
 
 	if len(allNodes) == 0 {
@@ -34,5 +34,5 @@ func GetRandomNode(inodes nodes.INodes) (*nodes.Node, error) {
 	}
 
 	klog.Infof("will randomly get 1 node from the %d available\n", len(allNodes))
-	return nodes.GetRandom(allNodes), nil
+	return nodes.GetRandom(allNodes)
 }

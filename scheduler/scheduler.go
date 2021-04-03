@@ -3,6 +3,7 @@ package scheduler
 import (
 	"aida-scheduler/scheduler/algorithms"
 	"aida-scheduler/scheduler/algorithms/geographiclocation"
+	"aida-scheduler/scheduler/algorithms/metricslocation"
 	"aida-scheduler/scheduler/algorithms/random"
 	"aida-scheduler/scheduler/nodes"
 	"aida-scheduler/utils"
@@ -100,6 +101,8 @@ func Run() {
 		algorithm = random.New(nodesStruct)
 	case "geographiclocation":
 		algorithm = geographiclocation.New(nodesStruct)
+	case "metricslocation":
+		algorithm = metricslocation.New(nodesStruct)
 	default:
 		algorithm = random.New(nodesStruct)
 	}

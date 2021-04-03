@@ -48,8 +48,27 @@ func TestNew(t *testing.T) {
 
 func TestGetAndCountNodes(t *testing.T) {
 	nodes := newTestNodes()
-	assert.Equal(t, 0, nodes.CountNodes())
-	assert.Equal(t, 0, len(nodes.GetAllNodes()))
+	node := newTestNode("Node0", true, "Braga", "Portugal", "Europe")
+	nodes.addNode(node)
+
+	assert.Equal(t, 1, nodes.CountNodes())
+	assert.Equal(t, 1, len(nodes.GetAllNodes()))
+}
+
+func TestGetNodesFilter(t *testing.T) {
+	nodes := newTestNodes()
+	filter := &NodeFilter{CPU: 5000}
+
+	node0 := &Node{Name: "Node0", CPU: 2500}
+	nodes.Nodes = append(nodes.Nodes, node0)
+
+	assert.Equal(t, 0, len(nodes.GetNodes(filter)))
+
+	node1 := &Node{Name: "Node1", CPU: 10000}
+	nodes.Nodes = append(nodes.Nodes, node1)
+
+	assert.Equal(t, 1, len(nodes.GetNodes(filter)))
+	assert.Equal(t, "Node1", nodes.GetNodes(filter)[0].Name)
 }
 
 func TestAddEdgeNode(t *testing.T) {
@@ -340,6 +359,11 @@ func TestNodeFilter(t *testing.T) {
 	assert.True(t, nodeMatchesFilters(node, filter))
 }
 
+func TestNodeNoFilter(t *testing.T) {
+	node, _ := newNodeFilter("test", 10, 10, "test", 1, 1)
+	assert.True(t, nodeMatchesFilters(node, &NodeFilter{}))
+}
+
 func TestNodeFilterFailLabel(t *testing.T) {
 	node, filter := newNodeFilter("test", 10, 10, "test1", 1, 1)
 	assert.False(t, nodeMatchesFilters(node, filter))
@@ -353,4 +377,9 @@ func TestNodeFilterFailCPU(t *testing.T) {
 func TestNodeFilterFailMemory(t *testing.T) {
 	node, filter := newNodeFilter("test", 10, 0, "test", 1, 1)
 	assert.False(t, nodeMatchesFilters(node, filter))
+}
+
+func TestGetRandomEmptyError(t *testing.T) {
+	_, err := GetRandom([]*Node{})
+	assert.Error(t, err)
 }

@@ -4,14 +4,27 @@ import (
 	"errors"
 )
 
+// CountNodes returns the number of cluster edge nodes
+func (nodes *Nodes) CountNodes() int {
+	return len(nodes.Nodes)
+}
+
 // GetAllNodes list all cluster edge nodes
 func (nodes *Nodes) GetAllNodes() []*Node {
 	return nodes.Nodes
 }
 
-// CountNodes returns the number of cluster edge nodes
-func (nodes *Nodes) CountNodes() int {
-	return len(nodes.Nodes)
+// GetNodes list all cluster edge nodes matching filter
+func (nodes *Nodes) GetNodes(filter *NodeFilter) []*Node {
+	nodesList := make([]*Node, 0)
+
+	for _, node := range nodes.Nodes {
+		if nodeMatchesFilters(node, filter) {
+			nodesList = append(nodesList, node)
+		}
+	}
+
+	return nodesList
 }
 
 // FindAnyNodeByCity returns one node in given city if exists
