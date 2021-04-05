@@ -19,9 +19,9 @@ the resource type of our workloads.
 ### Configuration - Environment variables
 
 `ALGORITHM` defines the method used to select target nodes for workload placement available algorithms are:
-* `metricslocation`(default): where nodes are filtered based on if they have enough available resources, and
+* `location`(default): where nodes are filtered based on if they have enough available resources, and
   the target node is selected based on the deployment required/preferred locations,
-* `geographiclocation`: where the target node is selected based on the deployment required/preferred locations
+* `naivelocation`: where the target node is selected based on the deployment required/preferred locations
 * `random`: where any edge node is a good fit for the given workloads
 
 
@@ -65,7 +65,7 @@ to sync files between our local system, and the cluster.
     ```shell
     kubectl exec -it $(kubectl get pod -n kube-system | grep aida-scheduler | awk '{print $1}') -- sh
     cd /code
-    ALGORITHM=geographiclocation go run main.go
+    ALGORITHM=naivelocation go run main.go
     ```
 
 #### Lint
