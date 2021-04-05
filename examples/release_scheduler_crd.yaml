@@ -59,7 +59,7 @@ spec:
           image: ghcr.io/aida-dos/aida-scheduler/aida-scheduler:latest
           env:
             - name: ALGORITHM
-              value: metricslocation
+              value: location
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

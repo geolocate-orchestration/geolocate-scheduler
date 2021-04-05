@@ -1,5 +1,15 @@
 package nodes
 
+func filterNodes(nodes []*Node, filter *NodeFilter) []*Node {
+	filtered := make([]*Node, 0)
+	for _, n := range nodes {
+		if nodeMatchesFilters(n, filter) {
+			filtered = append(filtered, n)
+		}
+	}
+	return filtered
+}
+
 func nodeMatchesFilters(node *Node, filter *NodeFilter) bool {
 	if filter == nil {
 		return true

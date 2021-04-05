@@ -1,4 +1,4 @@
-package metricslocation
+package naivelocation
 
 import (
 	"aida-scheduler/scheduler/algorithms"
@@ -9,19 +9,18 @@ import (
 	"strings"
 )
 
-type metricslocation struct {
+type naivelocation struct {
 	nodes      nodes.INodes
 	pod        *v1.Pod
 	queryType  string // required or preferred
 	cities     []string
 	countries  []string
 	continents []string
-	filter     *nodes.NodeFilter
 }
 
-// New creates new metricslocation struct
+// New creates new naivelocation struct
 func New(nodes nodes.INodes) algorithms.Algorithm {
-	return &metricslocation{
+	return &naivelocation{
 		nodes:      nodes,
 		pod:        nil,
 		queryType:  "",
@@ -31,13 +30,13 @@ func New(nodes nodes.INodes) algorithms.Algorithm {
 	}
 }
 
-func (geo *metricslocation) GetName() string {
-	return "metricslocation"
+func (geo *naivelocation) GetName() string {
+	return "naivelocation"
 }
 
 // GetNode select the best node matching the given constraints labels
 // It returns error if there are no nodes available and if no node matches an existing 'requiredLocation' label
-func (geo *metricslocation) GetNode(pod *v1.Pod) (*nodes.Node, error) {
+func (geo *naivelocation) GetNode(pod *v1.Pod) (*nodes.Node, error) {
 	var node *nodes.Node
 	var err error
 
@@ -47,15 +46,12 @@ func (geo *metricslocation) GetNode(pod *v1.Pod) (*nodes.Node, error) {
 	}
 
 	geo.pod = pod
-
-	geo.buildFilters()
-
 	if queryType := geo.getLocationLabelType(); queryType != "" {
 		geo.queryType = queryType
 		node, err = geo.getNodeByLocation()
 	} else {
 		// Node location labels were set so returning a random node
-		node, err = nodes.GetRandom(geo.nodes.GetNodes(geo.filter))
+		node, err = nodes.GetRandomFromList(geo.nodes.GetAllNodes())
 	}
 
 	return node, err
@@ -63,29 +59,7 @@ func (geo *metricslocation) GetNode(pod *v1.Pod) (*nodes.Node, error) {
 
 // Locations
 
-func (geo *metricslocation) buildFilters() {
-	cpu, memory := geo.getResourceSum()
-
-	geo.filter = &nodes.NodeFilter{
-		Labels: nil,
-		CPU:    cpu,
-		Memory: memory,
-	}
-}
-
-func (geo *metricslocation) getResourceSum() (int64, int64) {
-	cpu := int64(0)
-	memory := int64(0)
-
-	for _, container := range geo.pod.Spec.Containers {
-		cpu += container.Resources.Requests.Cpu().MilliValue()
-		memory += container.Resources.Requests.Memory().MilliValue()
-	}
-
-	return cpu, memory
-}
-
-func (geo *metricslocation) getNodeByLocation() (*nodes.Node, error) {
+func (geo *naivelocation) getNodeByLocation() (*nodes.Node, error) {
 	locations := geo.pod.Labels["deployment.edge.aida.io/"+geo.queryType+"Location"]
 	klog.Infoln(geo.queryType, "location:", locations)
 
@@ -104,10 +78,10 @@ func (geo *metricslocation) getNodeByLocation() (*nodes.Node, error) {
 	}
 
 	// when location is "preferred" and there are no matching nodes, return random node
-	return nodes.GetRandom(geo.nodes.GetNodes(geo.filter))
+	return nodes.GetRandomFromList(geo.nodes.GetAllNodes())
 }
 
-func (geo *metricslocation) getRequestedLocation() (*nodes.Node, error) {
+func (geo *naivelocation) getRequestedLocation() (*nodes.Node, error) {
 	if node, err := geo.getByCity(); err == nil {
 		return node, nil
 	}
@@ -123,17 +97,17 @@ func (geo *metricslocation) getRequestedLocation() (*nodes.Node, error) {
 	return nil, errors.New("no nodes match given locations")
 }
 
-func (geo *metricslocation) getSimilarToRequestedLocation() (*nodes.Node, error) {
-	if node, err := geo.nodes.FindAnyNodeByCityCountry(geo.cities, geo.filter); err == nil {
-		return node, nil
+func (geo *naivelocation) getSimilarToRequestedLocation() (*nodes.Node, error) {
+	if options := geo.nodes.FindNodesByCityCountry(geo.cities, nil); len(options) > 0 {
+		return nodes.GetRandomFromMap(options)
 	}
 
-	if node, err := geo.nodes.FindAnyNodeByCityContinent(geo.cities, geo.filter); err == nil {
-		return node, nil
+	if options := geo.nodes.FindNodesByCityContinent(geo.cities, nil); len(options) > 0 {
+		return nodes.GetRandomFromMap(options)
 	}
 
-	if node, err := geo.nodes.FindAnyNodeByCountryContinent(geo.countries, geo.filter); err == nil {
-		return node, nil
+	if options := geo.nodes.FindNodesByCountryContinent(geo.countries, nil); len(options) > 0 {
+		return nodes.GetRandomFromMap(options)
 	}
 
 	return nil, errors.New("no nodes match similar location to given locations")
@@ -141,33 +115,24 @@ func (geo *metricslocation) getSimilarToRequestedLocation() (*nodes.Node, error)
 
 // GetBy
 
-func (geo *metricslocation) getByCity() (*nodes.Node, error) {
-	if node, err := geo.nodes.FindAnyNodeByCity(geo.cities, geo.filter); err == nil {
-		return node, nil
-	}
-
-	return nil, errors.New("no nodes matched selected cities")
+func (geo *naivelocation) getByCity() (*nodes.Node, error) {
+	options := geo.nodes.FindNodesByCity(geo.cities, nil)
+	return nodes.GetRandomFromMap(options)
 }
 
-func (geo *metricslocation) getByCountry() (*nodes.Node, error) {
-	if node, err := geo.nodes.FindAnyNodeByCountry(geo.countries, geo.filter); err == nil {
-		return node, nil
-	}
-
-	return nil, errors.New("no nodes matched selected countries")
+func (geo *naivelocation) getByCountry() (*nodes.Node, error) {
+	options := geo.nodes.FindNodesByCountry(geo.countries, nil)
+	return nodes.GetRandomFromMap(options)
 }
 
-func (geo *metricslocation) getByContinent() (*nodes.Node, error) {
-	if node, err := geo.nodes.FindAnyNodeByContinent(geo.continents, geo.filter); err == nil {
-		return node, nil
-	}
-
-	return nil, errors.New("no nodes matched selected continents")
+func (geo *naivelocation) getByContinent() (*nodes.Node, error) {
+	options := geo.nodes.FindNodesByContinent(geo.continents, nil)
+	return nodes.GetRandomFromMap(options)
 }
 
 // Helpers
 
-func (geo *metricslocation) getLocationLabelType() string {
+func (geo *naivelocation) getLocationLabelType() string {
 	if geo.pod.Labels["deployment.edge.aida.io/requiredLocation"] != "" {
 		return "required"
 	}
@@ -179,7 +144,7 @@ func (geo *metricslocation) getLocationLabelType() string {
 	return ""
 }
 
-func (geo *metricslocation) parseLocations(locations string) {
+func (geo *naivelocation) parseLocations(locations string) {
 	divisions := strings.Split(locations, "-")
 	geo.cities = strings.Split(divisions[0], "_")
 	geo.countries = strings.Split(divisions[1], "_")

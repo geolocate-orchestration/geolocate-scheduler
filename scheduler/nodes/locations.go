@@ -7,7 +7,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func (nodes *Nodes) getNodeByCity(cityName string) (*Node, error) {
+func (nodes *Nodes) getNodesByCity(cityName string, filter *NodeFilter) ([]*Node, error) {
 	city, err := nodes.Query.FindSubdivisionByName(cityName)
 	if err != nil {
 		return nil, errors.New(err.Error())
@@ -15,21 +15,21 @@ func (nodes *Nodes) getNodeByCity(cityName string) (*Node, error) {
 
 	cityCode := fmt.Sprintf("%s-%s", city.CountryAlpha2, city.Code)
 	if options, ok := nodes.Cities[cityCode]; ok {
-		return GetRandom(options)
+		return filterNodes(options, filter), nil
 	}
 
 	return nil, errors.New("no node matches city")
 }
 
-func (nodes *Nodes) getNodeByCountry(countryCode string) (*Node, error) {
+func (nodes *Nodes) getNodesByCountry(countryCode string, filter *NodeFilter) ([]*Node, error) {
 	if options, ok := nodes.Countries[countryCode]; ok {
-		return GetRandom(options)
+		return filterNodes(options, filter), nil
 	}
 
 	return nil, errors.New("no nodes match given country")
 }
 
-func (nodes *Nodes) getNodeByContinent(continentName string) (*Node, error) {
+func (nodes *Nodes) getNodesByContinent(continentName string, filter *NodeFilter) ([]*Node, error) {
 	continent, err := nodes.ContinentsList.FindContinent(continentName)
 
 	if err != nil {
@@ -37,7 +37,7 @@ func (nodes *Nodes) getNodeByContinent(continentName string) (*Node, error) {
 	}
 
 	if options, ok := nodes.Continents[continent.Code]; ok {
-		return GetRandom(options)
+		return filterNodes(options, filter), nil
 	}
 
 	return nil, errors.New("no node matches given continent")

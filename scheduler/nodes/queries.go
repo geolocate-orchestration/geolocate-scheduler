@@ -1,9 +1,5 @@
 package nodes
 
-import (
-	"errors"
-)
-
 // CountNodes returns the number of cluster edge nodes
 func (nodes *Nodes) CountNodes() int {
 	return len(nodes.Nodes)
@@ -27,103 +23,116 @@ func (nodes *Nodes) GetNodes(filter *NodeFilter) []*Node {
 	return nodesList
 }
 
-// FindAnyNodeByCity returns one node in given city if exists
-func (nodes *Nodes) FindAnyNodeByCity(cities []string, filter *NodeFilter) (*Node, error) {
+// FindNodesByCity returns nodes in given city if exists
+func (nodes *Nodes) FindNodesByCity(cities []string, filter *NodeFilter) map[string][]*Node {
+	nodesMap := make(map[string][]*Node)
+
 	for _, city := range cities {
-		node, err := nodes.getNodeByCity(city)
-		if err == nil && nodeMatchesFilters(node, filter) {
-			return node, nil
+		if options, err := nodes.getNodesByCity(city, filter); err == nil {
+			nodesMap[city] = options
 		}
 	}
 
-	return nil, errors.New("no nodes match given cities")
+	return nodesMap
 }
 
-// FindAnyNodeByCityCountry returns one node in given city country if exists
-func (nodes *Nodes) FindAnyNodeByCityCountry(cities []string, filter *NodeFilter) (*Node, error) {
+// FindNodesByCityCountry returns nodes in given city country if exists
+func (nodes *Nodes) FindNodesByCityCountry(cities []string, filter *NodeFilter) map[string][]*Node {
+	nodesMap := make(map[string][]*Node)
+
 	for _, city := range cities {
-		countryResult, err := nodes.Query.FindSubdivisionCountryByName(city)
+		country, err := nodes.Query.FindSubdivisionCountryByName(city)
+		if err != nil {
+			// If subdivision name does not exists skip
+			continue
+		}
+		if _, ok := nodesMap[country.Alpha2]; ok {
+			// If country already processed skip
+			continue
+		}
+
+		if options, err := nodes.getNodesByCountry(country.Alpha2, filter); err == nil {
+			nodesMap[country.Alpha2] = options
+		}
+	}
+
+	return nodesMap
+}
+
+// FindNodesByCityContinent returns nodes in given city continent if exists
+func (nodes *Nodes) FindNodesByCityContinent(cities []string, filter *NodeFilter) map[string][]*Node {
+	nodesMap := make(map[string][]*Node)
+
+	for _, city := range cities {
+		country, err := nodes.Query.FindSubdivisionCountryByName(city)
 		if err != nil {
 			// If subdivision name does not exists return error
-			return nil, err
+			continue
+		}
+		if _, ok := nodesMap[country.Continent]; ok {
+			// If country already processed skip
+			continue
 		}
 
-		node, err := nodes.getNodeByCountry(countryResult.Alpha2)
-		if err == nil && nodeMatchesFilters(node, filter) {
-			// If any node exists in the given city country return it
-			return node, nil
-		}
-	}
-
-	return nil, errors.New("no nodes match given cities countries nor continents")
-}
-
-// FindAnyNodeByCityContinent returns one node in given city continent if exists
-func (nodes *Nodes) FindAnyNodeByCityContinent(cities []string, filter *NodeFilter) (*Node, error) {
-	for _, city := range cities {
-		countryResult, err := nodes.Query.FindSubdivisionCountryByName(city)
-		if err != nil {
-			// If subdivision name does not exists return error
-			return nil, err
-		}
-
-		node, err := nodes.getNodeByContinent(countryResult.Continent)
-		if err == nil && nodeMatchesFilters(node, filter) {
-			// If any node exists in the given city continent return it
-			return node, nil
+		if options, err := nodes.getNodesByContinent(country.Continent, filter); err == nil {
+			nodesMap[country.Continent] = options
 		}
 	}
 
-	return nil, errors.New("no nodes match given cities countries nor continents")
+	return nodesMap
 }
 
-// FindAnyNodeByCountry returns one node in given country if exists
-func (nodes *Nodes) FindAnyNodeByCountry(countries []string, filter *NodeFilter) (*Node, error) {
+// FindNodesByCountry returns nodes in given country if exists
+func (nodes *Nodes) FindNodesByCountry(countries []string, filter *NodeFilter) map[string][]*Node {
+	nodesMap := make(map[string][]*Node)
+
 	for _, countryID := range countries {
 		country, err := nodes.findCountry(countryID)
 		if err != nil {
-			// If country identifier string does not match any country return error
-			return nil, err
+			// If country identifier string does not match any country skip
+			continue
 		}
 
-		node, err := nodes.getNodeByCountry(country.Alpha2)
-		if err == nil && nodeMatchesFilters(node, filter) {
-			// If any node exists in the given country return it
-			return node, nil
+		if options, err := nodes.getNodesByCountry(country.Alpha2, filter); err == nil {
+			nodesMap[country.Alpha2] = options
 		}
 	}
 
-	return nil, errors.New("no nodes match given countries")
+	return nodesMap
 }
 
-// FindAnyNodeByCountryContinent returns one node in given country continent if exists
-func (nodes *Nodes) FindAnyNodeByCountryContinent(countries []string, filter *NodeFilter) (*Node, error) {
+// FindNodesByCountryContinent returns nodes in given country continent if exists
+func (nodes *Nodes) FindNodesByCountryContinent(countries []string, filter *NodeFilter) map[string][]*Node  {
+	nodesMap := make(map[string][]*Node)
+
 	for _, countryID := range countries {
 		country, err := nodes.findCountry(countryID)
 		if err != nil {
-			// If country identifier string does not match any country return error
-			return nil, err
+			// If country identifier string does not match any country skip
+			continue
+		}
+		if _, ok := nodesMap[country.Continent]; ok {
+			// If country already processed skip
+			continue
 		}
 
-		node, err := nodes.getNodeByContinent(country.Continent)
-		if err == nil && nodeMatchesFilters(node, filter) {
-			// If any node exists in the given continent return it
-			return node, nil
+		if options, err := nodes.getNodesByContinent(country.Continent, filter) ;err == nil {
+			nodesMap[country.Continent] = options
 		}
 	}
 
-	return nil, errors.New("no nodes match given countries continents")
+	return nodesMap
 }
 
-// FindAnyNodeByContinent returns one node in given continent if exists
-func (nodes *Nodes) FindAnyNodeByContinent(continents []string, filter *NodeFilter) (*Node, error) {
+// FindNodesByContinent returns nodes in given continent if exists
+func (nodes *Nodes) FindNodesByContinent(continents []string, filter *NodeFilter) map[string][]*Node  {
+	nodesMap := make(map[string][]*Node)
+
 	for _, continentsID := range continents {
-		node, err := nodes.getNodeByContinent(continentsID)
-		if err == nil && nodeMatchesFilters(node, filter) {
-			// If any node exists in the given continent return it
-			return node, nil
+		if options, err := nodes.getNodesByContinent(continentsID, filter); err == nil {
+			nodesMap[continentsID] = options
 		}
 	}
 
-	return nil, errors.New("no nodes match given continents")
+	return nodesMap
 }

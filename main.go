@@ -10,7 +10,7 @@ func main() {
 	algorithm := os.Getenv("ALGORITHM")
 
 	if algorithm == "" {
-		algorithm = "metricslocation"
+		algorithm = "location"
 	}
 
 	err := scheduler.Run(algorithm)

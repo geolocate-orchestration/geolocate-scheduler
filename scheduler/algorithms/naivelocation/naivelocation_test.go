@@ -1,21 +1,20 @@
-package metricslocation
+package naivelocation
 
 import (
 	"aida-scheduler/scheduler/nodes"
 	"github.com/aida-dos/gountries"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 )
 
-func newTestGeo(nodes *nodes.Nodes, pod *v1.Pod) *metricslocation {
+func newTestGeo(nodes *nodes.Nodes, pod *v1.Pod) *naivelocation {
 	if nodes == nil {
 		nodes = newTestNodes(nil, nil, nil, nil)
 	}
 
-	return &metricslocation{
+	return &naivelocation{
 		nodes:      nodes,
 		pod:        pod,
 		queryType:  "",
@@ -70,22 +69,12 @@ func newTestPod(typeString string, value string) *v1.Pod {
 		ObjectMeta: metaV1.ObjectMeta{
 			Labels: labels,
 		},
-		Spec: v1.PodSpec{Containers: []v1.Container{{
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					"cpu":    resource.MustParse("10"), // will take value of 10000
-					"memory": resource.MustParse("10"), // will take value of 10000
-				},
-			},
-		}}},
 	}
 }
 
 func newTestNode(name string) *nodes.Node {
 	return &nodes.Node{
-		Name:   name,
-		CPU:    int64(20000),
-		Memory: int64(20000),
+		Name: name,
 	}
 }
 
@@ -264,38 +253,8 @@ func TestParseLocations(t *testing.T) {
 	assert.Equal(t, 1, len(geoStruct.continents))
 }
 
-func TestNotEnoughCPUResources(t *testing.T) {
-	pod := newTestPod("nil", "1")
-	node := newTestNode("Node0")
-	node.CPU = 5000
-
-	nodeStruct := newTestNodes(
-		[]*nodes.Node{node},
-		nil, nil, nil,
-	)
-	geoStruct := newTestGeo(nodeStruct, pod)
-
-	_, err := geoStruct.GetNode(pod)
-	assert.Error(t, err)
-}
-
-func TestNotEnoughMemoryResources(t *testing.T) {
-	pod := newTestPod("nil", "1")
-	node := newTestNode("Node0")
-	node.Memory = 5000
-
-	nodeStruct := newTestNodes(
-		[]*nodes.Node{node},
-		nil, nil, nil,
-	)
-	geoStruct := newTestGeo(nodeStruct, pod)
-
-	_, err := geoStruct.GetNode(pod)
-	assert.Error(t, err)
-}
-
 func TestGetName(t *testing.T) {
 	geoStruct := newTestGeo(nil, nil)
 	name := geoStruct.GetName()
-	assert.Equal(t, "metricslocation", name)
+	assert.Equal(t, "naivelocation", name)
 }
