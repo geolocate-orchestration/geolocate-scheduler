@@ -2,8 +2,8 @@ package scheduler
 
 import (
 	"aida-scheduler/scheduler/algorithms"
-	"aida-scheduler/scheduler/algorithms/geographiclocation"
-	"aida-scheduler/scheduler/algorithms/metricslocation"
+	"aida-scheduler/scheduler/algorithms/naivelocation"
+	"aida-scheduler/scheduler/algorithms/location"
 	"aida-scheduler/scheduler/algorithms/random"
 	"aida-scheduler/scheduler/nodes"
 	"aida-scheduler/utils"
@@ -17,7 +17,7 @@ import (
 	"os"
 )
 
-var availableAlgorithms = []string{"metricslocation", "geographiclocation", "random"}
+var availableAlgorithms = []string{"location", "naivelocation", "random"}
 
 func bind(clientset *kubernetes.Clientset, algorithm algorithms.Algorithm, pod *v1.Pod) {
 	node, err := algorithm.GetNode(pod)
@@ -90,10 +90,10 @@ func initAlgorithm(algorithmName string, nodesStruct nodes.INodes) algorithms.Al
 	switch algorithmName {
 	case "random":
 		algorithm = random.New(nodesStruct)
-	case "geographiclocation":
-		algorithm = geographiclocation.New(nodesStruct)
-	case "metricslocation":
-		algorithm = metricslocation.New(nodesStruct)
+	case "naivelocation":
+		algorithm = naivelocation.New(nodesStruct)
+	case "location":
+		algorithm = location.New(nodesStruct)
 	default:
 		algorithm = random.New(nodesStruct)
 	}

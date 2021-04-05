@@ -10,12 +10,12 @@ type INodes interface {
 	CountNodes() int
 	GetAllNodes() []*Node
 	GetNodes(filter *NodeFilter) []*Node
-	FindAnyNodeByCity(cities []string, filter *NodeFilter) (*Node, error)
-	FindAnyNodeByCityCountry(cities []string, filter *NodeFilter) (*Node, error)
-	FindAnyNodeByCityContinent(cities []string, filter *NodeFilter) (*Node, error)
-	FindAnyNodeByCountry(countries []string, filter *NodeFilter) (*Node, error)
-	FindAnyNodeByCountryContinent(countries []string, filter *NodeFilter) (*Node, error)
-	FindAnyNodeByContinent(continents []string, filter *NodeFilter) (*Node, error)
+	FindNodesByCity(cities []string, filter *NodeFilter) map[string][]*Node
+	FindNodesByCityCountry(cities []string, filter *NodeFilter) map[string][]*Node
+	FindNodesByCityContinent(cities []string, filter *NodeFilter) map[string][]*Node
+	FindNodesByCountry(countries []string, filter *NodeFilter) map[string][]*Node
+	FindNodesByCountryContinent(countries []string, filter *NodeFilter) map[string][]*Node
+	FindNodesByContinent(continents []string, filter *NodeFilter) map[string][]*Node
 }
 
 // Nodes controls in-cache nodes

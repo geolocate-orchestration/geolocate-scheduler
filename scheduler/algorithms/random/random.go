@@ -38,5 +38,5 @@ func getRandomNode(inodes nodes.INodes) (*nodes.Node, error) {
 	}
 
 	klog.Infof("will randomly get 1 node from the %d available\n", len(allNodes))
-	return nodes.GetRandom(allNodes)
+	return nodes.GetRandomFromList(allNodes)
 }

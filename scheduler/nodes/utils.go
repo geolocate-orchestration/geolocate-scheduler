@@ -4,6 +4,7 @@ import (
 	"errors"
 	v1 "k8s.io/api/core/v1"
 	"math/rand"
+	"reflect"
 )
 
 func nodeHasSignificantChanges(oldNode *v1.Node, newNode *v1.Node) bool {
@@ -13,11 +14,23 @@ func nodeHasSignificantChanges(oldNode *v1.Node, newNode *v1.Node) bool {
 		oldNode.Labels[continentLabel] != newNode.Labels[continentLabel]
 }
 
-// GetRandom returns a random node from the list
-func GetRandom(options []*Node) (*Node, error) {
+// GetRandomFromList returns a random node from the list
+func GetRandomFromList(options []*Node) (*Node, error) {
 	if len(options) == 0 {
 		return nil, errors.New("no nodes available")
 	}
 
 	return options[rand.Intn(len(options))], nil
+}
+
+// GetRandomFromMap returns a random node from the map
+func GetRandomFromMap(options map[string][]*Node) (*Node, error) {
+	if len(options) == 0 {
+		return nil, errors.New("no nodes available")
+	}
+
+	keys := reflect.ValueOf(options).MapKeys()
+	mapKeyValue := keys[rand.Intn(len(keys))].String()
+
+	return options[mapKeyValue][rand.Intn(len(options[mapKeyValue]))], nil
 }
