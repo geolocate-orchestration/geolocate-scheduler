@@ -5,16 +5,16 @@ WORKDIR /workspace
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY utils/ utils/
-COPY main.go main.go
-COPY scheduler/ scheduler/
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build
+COPY cmd/ cmd/
+COPY internal/ internal/
+COPY pkg/ pkg/
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -o build/ ./...
 
 
 FROM gcr.io/distroless/static:nonroot
 
 WORKDIR /
-COPY --from=builder /workspace/aida-scheduler .
+COPY --from=builder /workspace/build/k8s-scheduler .
 USER nonroot:nonroot
 
-ENTRYPOINT ["/aida-scheduler"]
+ENTRYPOINT ["/k8s-scheduler"]

@@ -55,4 +55,4 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         push: true
-        tags: ghcr.io/${{ github.repository_owner }}/aida-schedulder:${{ steps.current-time.outputs.formattedTime }}
+        tags: ghcr.io/${{ github.repository_owner }}/k8s-schedulder:${{ steps.current-time.outputs.formattedTime }}

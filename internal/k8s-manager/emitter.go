@@ -1,4 +1,4 @@
-package utils
+package k8smanager
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 )
 
 // EmitEvent logs the binding of a pod to a node to kubernetes cluster
-func EmitEvent(algorithmName string, clientset *kubernetes.Clientset, pod *v1.Pod, nodeID string, err error) {
+func EmitEvent(name string, clientset *kubernetes.Clientset, pod *v1.Pod, nodeID string, err error) {
 	reason, message, eventType := getMessage(pod, nodeID, err)
 	timestamp := time.Now().UTC()
 
@@ -23,7 +23,7 @@ func EmitEvent(algorithmName string, clientset *kubernetes.Clientset, pod *v1.Po
 			LastTimestamp:  metaV1.NewTime(timestamp),
 			FirstTimestamp: metaV1.NewTime(timestamp),
 			Type:           eventType,
-			Source:         eventSource(algorithmName),
+			Source:         eventSource(name),
 			InvolvedObject: involvedObject(pod),
 			ObjectMeta:     objectMeta(pod),
 		},
