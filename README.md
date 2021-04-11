@@ -89,17 +89,17 @@ go fmt ./...
 ### Manage nodes
 
 The k8s-scheduler only manages Edge nodes, because the main purpose is to allow application workload to be deployed
-near the source of data to be processed. Therefore, the node controller filters nodes by 'node-role.kubernetes.io/edge'
+near the source of data to be processed. Therefore, the node controller filters nodes by 'node.mv.io'
 labels.
 
 - To add the label
     ```shell
-    kubectl label node node0 --overwrite node-role.kubernetes.io/edge= 
+    kubectl label node node0 --overwrite node.mv.io= 
     ```
 
 - To remove the label
     ```shell
-    kubectl label node node0 --overwrite node-role.kubernetes.io/edge-
+    kubectl label node node0 --overwrite node.mv.io-
     ```
 
 ### Deploy workloads
