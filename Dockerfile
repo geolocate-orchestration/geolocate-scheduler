@@ -14,7 +14,6 @@ RUN go mod download
 
 COPY cmd/ cmd/
 COPY internal/ internal/
-COPY pkg/ pkg/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -o build/ ./...
 
 

@@ -24,14 +24,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Configure git for private modules
         run: git config --global url."https://${{ secrets.ACCOUNT }}:${{ secrets.ACCESS_TOKEN }}@github.com".insteadOf "https://github.com"
-      - name: Lint
-        uses: golangci/golangci-lint-action@v2
-        env:
-          GOPRIVATE: github.com/mv-orchestration/scheduler
-        with:
-          version: v1.39
       - name: Test
         env:
           GOPRIVATE: github.com/mv-orchestration/scheduler
         run: go test --coverprofile=coverage.out ./...
-
