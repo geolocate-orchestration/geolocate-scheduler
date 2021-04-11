@@ -2,6 +2,13 @@ FROM golang:1.16-alpine as builder
 
 WORKDIR /workspace
 
+ARG git_user
+ARG git_token
+
+RUN apk add git && \
+    go env -w GOPRIVATE=github.com/mv-orchestration && \
+    git config --global url."https://${git_user}:${git_token}@github.com".insteadOf "https://github.com"
+
 COPY go.mod go.sum ./
 RUN go mod download
 
