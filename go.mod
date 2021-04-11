@@ -3,7 +3,7 @@ module github.com/mv-orchestration/k8s-scheduler
 go 1.16
 
 require (
-	github.com/mv-orchestration/scheduler v0.0.0-20210410001943-a095b5c36dd6
+	github.com/mv-orchestration/scheduler v0.0.0-20210411214659-18974e4b9c68
 	k8s.io/api v0.18.10
 	k8s.io/apimachinery v0.18.11-rc.0
 	k8s.io/client-go v0.18.10
