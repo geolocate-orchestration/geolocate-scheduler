@@ -107,6 +107,8 @@ github.com/mv-orchestration/scheduler v0.0.0-20210411211643-89a5acf4e0a3 h1:oe+l
 github.com/mv-orchestration/scheduler v0.0.0-20210411211643-89a5acf4e0a3/go.mod h1:1pxl6uxw0590JcGqUp5ZNdY3nufaP0KTAwwCzyDl3FE=
 github.com/mv-orchestration/scheduler v0.0.0-20210411214659-18974e4b9c68 h1:ScNj/fga+o7cIwnY2eiexZwVjp/7GySNl2fb0K02HuU=
 github.com/mv-orchestration/scheduler v0.0.0-20210411214659-18974e4b9c68/go.mod h1:1pxl6uxw0590JcGqUp5ZNdY3nufaP0KTAwwCzyDl3FE=
+github.com/mv-orchestration/scheduler v0.0.0-20210411222109-e43099b79ab3 h1:IRTPycwlA1wS6WQCGWP5PVbW2/G4RBZ5ZD3RBEOYNXM=
+github.com/mv-orchestration/scheduler v0.0.0-20210411222109-e43099b79ab3/go.mod h1:1pxl6uxw0590JcGqUp5ZNdY3nufaP0KTAwwCzyDl3FE=
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+o7JKHSa8/e818NopupXU1YMK5fe1lsApnBw=
 github.com/onsi/ginkgo v0.0.0-20170829012221-11459a886d9c/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
