@@ -1,6 +1,7 @@
 on:
   push:
     branches:
+      - develop
       - main
   pull_request:
     branches:
@@ -21,10 +22,9 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Lint
-        uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.39
+      - name: Configure git for private modules
+        run: git config --global url."https://${{ secrets.ACCOUNT }}:${{ secrets.ACCESS_TOKEN }}@github.com".insteadOf "https://github.com"
       - name: Test
+        env:
+          GOPRIVATE: github.com/mv-orchestration/scheduler
         run: go test --coverprofile=coverage.out ./...
-

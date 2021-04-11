@@ -1,10 +1,9 @@
-module aida-scheduler
+module github.com/mv-orchestration/k8s-scheduler
 
 go 1.16
 
 require (
-	github.com/aida-dos/gountries v0.0.0-20210328164130-bacd2f98d9be
-	github.com/stretchr/testify v1.4.0
+	github.com/mv-orchestration/scheduler v0.0.0-20210410001943-a095b5c36dd6
 	k8s.io/api v0.18.10
 	k8s.io/apimachinery v0.18.11-rc.0
 	k8s.io/client-go v0.18.10

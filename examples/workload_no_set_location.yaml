@@ -1,4 +1,4 @@
-apiVersion: edge.aida.io/v1
+apiVersion: edge.mv.io/v1
 kind: Deployment
 metadata:
   name: no-set-location

@@ -33,4 +33,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/aida-schedulder:${{ steps.tag.outputs.tag }},ghcr.io/${{ github.repository_owner }}/aida-schedulder:latest
+          build-args: |
+            git_user=${{ secrets.ACCOUNT }}
+            git_token=${{ secrets.ACCESS_TOKEN }}
+          tags: ghcr.io/${{ github.repository_owner }}/k8s-schedulder:${{ steps.tag.outputs.tag }},ghcr.io/${{ github.repository_owner }}/k8s-schedulder:latest
