@@ -1,17 +1,17 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: k8s-scheduler
+  name: geolocate-scheduler
   namespace: kube-system
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: k8s-scheduler-as-kube-scheduler
+  name: geolocate-scheduler-as-kube-scheduler
 subjects:
   - kind: ServiceAccount
-    name: k8s-scheduler
+    name: geolocate-scheduler
     namespace: kube-system
 roleRef:
   kind: ClusterRole
@@ -22,10 +22,10 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: k8s-scheduler-as-volume-scheduler
+  name: geolocate-scheduler-as-volume-scheduler
 subjects:
   - kind: ServiceAccount
-    name: k8s-scheduler
+    name: geolocate-scheduler
     namespace: kube-system
 roleRef:
   kind: ClusterRole
@@ -37,25 +37,25 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/name: k8s-scheduler
+    app.kubernetes.io/name: geolocate-scheduler
     app.kubernetes.io/version: 1.0.0
-  name: k8s-scheduler
+  name: geolocate-scheduler
   namespace: kube-system
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: k8s-scheduler
+      app.kubernetes.io/name: geolocate-scheduler
       app.kubernetes.io/version: 1.0.0
   replicas: 1
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: k8s-scheduler
+        app.kubernetes.io/name: geolocate-scheduler
         app.kubernetes.io/version: 1.0.0
     spec:
-      serviceAccountName: k8s-scheduler
+      serviceAccountName: geolocate-scheduler
       containers:
-        - name: k8s-scheduler
+        - name: geolocate-scheduler
           image: golang:1.16-alpine
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "while true; do sleep 30; done;" ]

@@ -1,7 +1,7 @@
 package main
 
 import (
-	k8smanager "github.com/mv-orchestration/k8s-scheduler/internal/k8s-manager"
+	k8smanager "github.com/geolocate-orchestration/geolocate-scheduler/internal/k8s-manager"
 	"k8s.io/klog/v2"
 	"os"
 )

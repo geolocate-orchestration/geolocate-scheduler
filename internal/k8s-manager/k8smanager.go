@@ -1,7 +1,7 @@
 package k8smanager
 
 import (
-	"github.com/mv-orchestration/scheduler"
+	"github.com/geolocate-orchestration/scheduler"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -21,7 +21,7 @@ func Run(algorithmName string) error {
 		ischeduler: ischeduler,
 	}
 
-	klog.Infof("starting k8s-scheduler - %s algorithm...\n", k.algorithm)
+	klog.Infof("starting geolocate-scheduler - %s algorithm...\n", k.algorithm)
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
