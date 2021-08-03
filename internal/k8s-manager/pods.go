@@ -2,10 +2,14 @@ package k8smanager
 
 import (
 	"context"
+	"os"
+	"time"
+
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	"os"
+
+	"github.com/mv-orchestration/scheduler/algorithms"
 )
 
 func (k *k8smanager) watch() {
@@ -34,7 +38,22 @@ func (k *k8smanager) watch() {
 }
 
 func (k *k8smanager) bind(pod *v1.Pod) {
-	node, err := k.ischeduler.ScheduleWorkload(nil)
+	cpu := int64(0)
+	mem := int64(0)
+
+	for _, v := range pod.Spec.Containers {
+		cpu += v.Resources.Requests.Cpu().MilliValue()
+		mem += v.Resources.Requests.Memory().MilliValue()
+	}
+
+	w := &algorithms.Workload{
+		Name:   pod.Name,
+		Labels: pod.Labels,
+		CPU:    cpu,
+		Memory: mem,
+	}
+
+	node, err := k.ischeduler.ScheduleWorkload(w)
 
 	if err != nil {
 		klog.Errorln(err)
