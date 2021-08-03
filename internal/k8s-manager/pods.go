@@ -3,7 +3,6 @@ package k8smanager
 import (
 	"context"
 	"os"
-	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
