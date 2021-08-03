@@ -50,7 +50,7 @@ to sync files between our local system, and the cluster.
    ```shell
     kubectl apply -f example/dev_scheduler_crd.yaml
     ```
-   
+
 3. If not done before then create a ksync configuration for the current folder.
     ```shell
     ksync create --selector=component=k8s-scheduler --reload=false --local-read-only=true $(pwd) /code
@@ -77,7 +77,7 @@ golangci-lint ./...
 #### Testing and Coverage
 ```shell
 go test --coverprofile=coverage.out ./...
-go tool cover -html=coverage.out 
+go tool cover -html=coverage.out
 ```
 
 #### Format
@@ -89,17 +89,17 @@ go fmt ./...
 ### Manage nodes
 
 The k8s-scheduler only manages Edge nodes, because the main purpose is to allow application workload to be deployed
-near the source of data to be processed. Therefore, the node controller filters nodes by 'node.mv.io'
+near the source of data to be processed. Therefore, the node controller filters nodes by 'node.geolocate.io'
 labels.
 
 - To add the label
     ```shell
-    kubectl label node node0 --overwrite node.mv.io= 
+    kubectl label node node0 --overwrite node.geolocate.io=
     ```
 
 - To remove the label
     ```shell
-    kubectl label node node0 --overwrite node.mv.io-
+    kubectl label node node0 --overwrite node.geolocate.io-
     ```
 
 ### Deploy workloads
