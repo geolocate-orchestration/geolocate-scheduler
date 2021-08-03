@@ -1,19 +1,19 @@
-# k8s-scheduler
+# geolocate-scheduler
 
-[![Test](https://github.com/mv-orchestration/k8s-scheduler/actions/workflows/test.yml/badge.svg?branch=develop)](https://github.com/mv-orchestration/k8s-scheduler/actions/workflows/test.yml)
+[![Test](https://github.com/geolocate-orchestration/geolocate-scheduler/actions/workflows/test.yml/badge.svg?branch=develop)](https://github.com/geolocate-orchestration/geolocate-scheduler/actions/workflows/test.yml)
 
 IoT and other data-intensive systems produce enormous amounts of data to be processed. In this project, we explore the
 Edge Computing concept as additional computational power to the Cloud nodes, allowing data process computations to occur
 closer to their source.
 
-Using Kubernetes/KubeEdge to manage the data processing workloads, the k8s-scheduler aims towards substantial
+Using Kubernetes/KubeEdge to manage the data processing workloads, the geolocate-scheduler aims towards substantial
 improvements in scalability levels, reducing the request latency and network usage, by scheduling those workloads in
 Edge Nodes based on the geographical location of the data and resource availability.
 
 ## Usage
 
 > :warning: First, make sure you have deployed or are running the edge-deployment-controller in the cluster by following the instructions in
-the [project repository](https://github.com/mv-orchestration/edge-deployment-controller). This controller is responsible for the management and reconciliation of the EdgeDeployments, which are the
+the [project repository](https://github.com/geolocate-orchestration/edge-deployment-controller). This controller is responsible for the management and reconciliation of the EdgeDeployments, which are the
 the resource type of our workloads.
 
 ### Configuration - Environment variables
@@ -33,14 +33,14 @@ kubectl apply -f examples/release_scheduler_crd.yaml
 
 #### Build custom docker image
 ```shell
-docker build -t k8s-scheduler .
+docker build -t geolocate-scheduler .
 ```
 
 ### Development
 
-#### Run the k8s-scheduler
+#### Run the geolocate-scheduler
 
-To develop k8s-scheduler in a Kubernetes cluster we use [ksync](https://github.com/ksync/ksync)
+To develop geolocate-scheduler in a Kubernetes cluster we use [ksync](https://github.com/ksync/ksync)
 to sync files between our local system, and the cluster.
 
 1. Install ksync. You can follow ksync installation steps [here](https://github.com/ksync/ksync#installation).
@@ -53,7 +53,7 @@ to sync files between our local system, and the cluster.
 
 3. If not done before then create a ksync configuration for the current folder.
     ```shell
-    ksync create --selector=component=k8s-scheduler --reload=false --local-read-only=true $(pwd) /code
+    ksync create --selector=component=geolocate-scheduler --reload=false --local-read-only=true $(pwd) /code
     ```
 
 4. Start ksync update system
@@ -63,7 +63,7 @@ to sync files between our local system, and the cluster.
 
 5. Run the scheduler in the cluster pod
     ```shell
-    kubectl exec -it $(kubectl get pod -n kube-system | grep k8s-scheduler | awk '{print $1}') -- sh
+    kubectl exec -it $(kubectl get pod -n kube-system | grep geolocate-scheduler | awk '{print $1}') -- sh
     cd /code
     ALGORITHM=naivelocation go run main.go
     ```
@@ -88,7 +88,7 @@ go fmt ./...
 
 ### Manage nodes
 
-The k8s-scheduler only manages Edge nodes, because the main purpose is to allow application workload to be deployed
+The geolocate-scheduler only manages Edge nodes, because the main purpose is to allow application workload to be deployed
 near the source of data to be processed. Therefore, the node controller filters nodes by 'node.geolocate.io'
 labels.
 

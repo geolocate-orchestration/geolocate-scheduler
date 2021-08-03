@@ -8,14 +8,14 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 
-	"github.com/mv-orchestration/scheduler/algorithms"
+	"github.com/geolocate-orchestration/scheduler/algorithms"
 )
 
 func (k *k8smanager) watch() {
 	watch, err := k.clientset.CoreV1().Pods("").Watch(
 		context.TODO(),
 		metaV1.ListOptions{
-			FieldSelector: "spec.schedulerName=k8s-scheduler,spec.nodeName=",
+			FieldSelector: "spec.schedulerName=geolocate-scheduler,spec.nodeName=",
 		},
 	)
 
@@ -56,7 +56,7 @@ func (k *k8smanager) bind(pod *v1.Pod) {
 
 	if err != nil {
 		klog.Errorln(err)
-		EmitEvent("k8s-scheduler", k.clientset, pod, "", err)
+		EmitEvent("geolocate-scheduler", k.clientset, pod, "", err)
 		return
 	}
 
@@ -78,5 +78,5 @@ func (k *k8smanager) bind(pod *v1.Pod) {
 		metaV1.CreateOptions{},
 	)
 
-	EmitEvent("k8s-scheduler", k.clientset, pod, node.Name, err)
+	EmitEvent("geolocate-scheduler", k.clientset, pod, node.Name, err)
 }

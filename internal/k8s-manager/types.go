@@ -1,7 +1,7 @@
 package k8smanager
 
 import (
-	"github.com/mv-orchestration/scheduler"
+	"github.com/geolocate-orchestration/scheduler"
 	"k8s.io/client-go/kubernetes"
 )
 

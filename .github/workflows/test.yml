@@ -26,5 +26,5 @@ jobs:
         run: git config --global url."https://${{ secrets.ACCOUNT }}:${{ secrets.ACCESS_TOKEN }}@github.com".insteadOf "https://github.com"
       - name: Test
         env:
-          GOPRIVATE: github.com/mv-orchestration/scheduler
+          GOPRIVATE: github.com/geolocate-orchestration/scheduler
         run: go test --coverprofile=coverage.out ./...
